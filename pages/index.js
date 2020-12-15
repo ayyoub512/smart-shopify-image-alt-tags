@@ -1,6 +1,8 @@
+import { Heading, TextStyle } from '@shopify/polaris';
 const index = () => (
     <div>
-        <h4>Hello, World!</h4>
+        <TextStyle variation='subdued'>No supplier listed</TextStyle>
+        <Heading>Online store dashboard</Heading>
     </div>
 );
 
