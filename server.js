@@ -6,6 +6,9 @@ const { default: createShopifyAuth } = require('@shopify/koa-shopify-auth');
 const { verifyRequest } = require('@shopify/koa-shopify-auth');
 const session = require('koa-session');
 
+const Router = require('koa-router');
+const router = new Router();
+
 dotenv.config();
 
 const port = parseInt(process.env.PORT, 10) || 3000;
@@ -27,6 +30,13 @@ app.prepare().then(() => {
             scopes: ['read_products', 'write_products'],
             afterAuth(ctx) {
                 const { shop, accessToken } = ctx.session;
+                console.log(accessToken);
+
+                console.log('Hi from afterAuth method accessToken is will follow me');
+                console.log('accessToken ', accessToken);
+                ctx.cookies.set('accessToken', accessToken); // Setting our access token
+                // ctx.cookies.set('shop', shop); // Setting our access token
+
                 ctx.redirect('/');
             },
         })
@@ -44,4 +54,32 @@ app.prepare().then(() => {
     server.listen(port, () => {
         console.log(`> Ready on http://localhost:${port}`);
     });
+});
+
+router.get('/api/products', async (ctx) => {
+    /**
+     * @LINK https://community.shopify.com/c/Shopify-APIs-SDKs/Problem-Querying-REST-API-from-React-Node/m-p/509542#M33091
+     */
+    console.log('I am inside server /api/product end point');
+
+    try {
+        const results = await fetch(
+            'https://' + ctx.cookies.get('shopOrigin') + '/admin/api/2020-10/products.json',
+            {
+                headers: {
+                    'X-Shopify-Access-Token': ctx.cookies.get('accessToken'),
+                },
+            }
+        )
+            .then((response) => response.json())
+            .then((json) => {
+                return json;
+            });
+        ctx.body = {
+            status: 'success',
+            data: results,
+        };
+    } catch (err) {
+        console.log(err);
+    }
 });
