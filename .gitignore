@@ -1,6 +1,2 @@
-package.json
-.next
 node_modules
-.env
-package-lock.json
-errors.htm
+.next
