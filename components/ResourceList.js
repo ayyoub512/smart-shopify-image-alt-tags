@@ -1,6 +1,6 @@
 import React from 'react';
 import gql from 'graphql-tag';
-import { Query, Mutation } from 'react-apollo';
+import { Query, Mutation, useQuery } from 'react-apollo';
 import { Card, ResourceList, Stack, TextStyle, Thumbnail } from '@shopify/polaris';
 import store from 'store-js';
 import { Redirect } from '@shopify/app-bridge/actions';
@@ -106,19 +106,28 @@ class ResourceListWithProducts extends React.Component {
 
         return (
             <Mutation mutation={BULK_INIT_QUERY}>
-                {(initBulkOperation, { data }) => (
-                    <div>
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                initBulkOperation({ variables: {} });
-                                console.log(data);
-                            }}
-                        >
-                            <button type='submit'>REQUEST DATA</button>
-                        </form>
-                    </div>
-                )}
+                {(initBulkOperation, { data, called }) => {
+                    if (!called) {
+                        console.log("The Operation hasn't been called yet, calling it now");
+                        initBulkOperation({ variables: {} });
+                    }
+                    if (data) {
+                        console.log('Data found', data);
+                        console.log('Initiating a call to useQuery ');
+
+                        return (
+                            <div>
+                                <p>{data.bulkOperationRunQuery.bulkOperation.id}</p>
+                            </div>
+                        );
+                    } else {
+                        return (
+                            <div onLoad={console.log('OnLoad => ', data)}>
+                                <p>Loading Please wait..</p>
+                            </div>
+                        );
+                    }
+                }}
             </Mutation>
         );
     }
