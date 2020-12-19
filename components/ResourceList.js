@@ -1,6 +1,6 @@
 import React from 'react';
 import gql from 'graphql-tag';
-import { Query } from 'react-apollo';
+import { Query, Mutation } from 'react-apollo';
 import { Card, ResourceList, Stack, TextStyle, Thumbnail } from '@shopify/polaris';
 import store from 'store-js';
 import { Redirect } from '@shopify/app-bridge/actions';
@@ -37,10 +37,64 @@ const GET_PRODUCTS_BY_ID = gql`
     }
 `;
 
+const BULK_INIT_QUERY = gql`
+    mutation {
+        bulkOperationRunQuery(
+            query: """
+            {
+              products {
+                edges {
+                  node {
+                    id
+                    images{
+                      edges{
+                        node{
+                          id
+                          originalSrc
+                          altText
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """
+        ) {
+            bulkOperation {
+                id
+                status
+            }
+            userErrors {
+                field
+                message
+            }
+        }
+    }
+`;
+
+const BULK_STATUS_QUERY = gql`
+    query {
+        currentBulkOperation {
+            id
+            status
+            errorCode
+            createdAt
+            completedAt
+            objectCount
+            fileSize
+            url
+            partialDataUrl
+        }
+    }
+`;
+
 class ResourceListWithProducts extends React.Component {
     static contextType = Context;
 
     render() {
+        console.log('Hi Resource list funk');
+
         const app = this.context;
 
         const redirectToProduct = () => {
@@ -51,66 +105,21 @@ class ResourceListWithProducts extends React.Component {
         const twoWeeksFromNow = new Date(Date.now() + 12096e5).toDateString();
 
         return (
-            <Query query={GET_PRODUCTS_BY_ID} variables={{ ids: store.get('ids') }}>
-                {({ data, loading, error }) => {
-                    if (loading) return <div>Loading…</div>;
-                    if (error) return <div>{error.message}</div>;
-                    console.log(data);
-                    return (
-                        <Card>
-                            <ResourceList
-                                showHeader
-                                resourceName={{ singular: 'Product', plural: 'Products' }}
-                                items={data.nodes}
-                                renderItem={(item) => {
-                                    const media = (
-                                        <Thumbnail
-                                            source={
-                                                item.images.edges[0]
-                                                    ? item.images.edges[0].node.originalSrc
-                                                    : ''
-                                            }
-                                            alt={
-                                                item.images.edges[0]
-                                                    ? item.images.edges[0].node.altText
-                                                    : ''
-                                            }
-                                        />
-                                    );
-                                    const price = item.variants.edges[0].node.price;
-                                    return (
-                                        <ResourceList.Item
-                                            id={item.id}
-                                            media={media}
-                                            accessibilityLabel={`View details for ${item.title}`}
-                                            onClick={() => {
-                                                store.set('item', item);
-                                                redirectToProduct();
-                                            }}
-                                        >
-                                            <Stack>
-                                                <Stack.Item fill>
-                                                    <h3>
-                                                        <TextStyle variation='strong'>
-                                                            {item.title}
-                                                        </TextStyle>
-                                                    </h3>
-                                                </Stack.Item>
-                                                <Stack.Item>
-                                                    <p>${price}</p>
-                                                </Stack.Item>
-                                                <Stack.Item>
-                                                    <p>Expires on {twoWeeksFromNow} </p>
-                                                </Stack.Item>
-                                            </Stack>
-                                        </ResourceList.Item>
-                                    );
-                                }}
-                            />
-                        </Card>
-                    );
-                }}
-            </Query>
+            <Mutation mutation={BULK_INIT_QUERY}>
+                {(initBulkOperation, { data }) => (
+                    <div>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                initBulkOperation({ variables: {} });
+                                console.log(data);
+                            }}
+                        >
+                            <button type='submit'>REQUEST DATA</button>
+                        </form>
+                    </div>
+                )}
+            </Mutation>
         );
     }
 }
