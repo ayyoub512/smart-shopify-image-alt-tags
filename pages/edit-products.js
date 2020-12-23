@@ -1,31 +1,72 @@
-import React from 'react';
-import {
-    Card,
-    DisplayText,
-    Form,
-    FormLayout,
-    Layout,
-    Page,
-    PageActions,
-    TextField,
-    Banner,
-    Frame,
-    Toast,
-} from '@shopify/polaris';
-import { Mutation } from 'react-apollo';
-
+import { Query, Mutation } from 'react-apollo';
 import store from 'store-js';
 import gql from 'graphql-tag';
+import Rating from '@material-ui/lab/Rating';
+import { AiFillEye, AiFillEyeInvisible } from 'react-icons/ai';
+import { Heading, TextStyle, Card, Page } from '@shopify/polaris';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
+import IconButton from '@material-ui/core/IconButton';
 
-const UPDATE_PRICE = gql`
-    mutation productVariantUpdate($input: ProductVariantInput!) {
-        productVariantUpdate(input: $input) {
-            product {
-                title
+const GET_REVIEWS = gql`
+    query Product($id: ID!) {
+        product(id: $id) {
+            metafields(first: 30, namespace: "MenkReview") {
+                edges {
+                    node {
+                        id
+                        key
+                        value
+                        valueType
+                        description
+                        legacyResourceId
+                    }
+                }
             }
-            productVariant {
-                id
-                price
+        }
+    }
+`;
+
+const GET_REVIEW_SUMMARY = gql`
+    query Product($id: ID!) {
+        product(id: $id) {
+            metafields(first: 1, namespace: "reviewSummary") {
+                edges {
+                    node {
+                        id
+                        key
+                        value
+                        valueType
+                        description
+                        legacyResourceId
+                    }
+                }
+            }
+        }
+    }
+`;
+
+const UPDATE_METAFIELD = gql`
+    mutation($input: ProductInput!) {
+        productUpdate(input: $input) {
+            product {
+                metafields(first: 100) {
+                    edges {
+                        node {
+                            id
+                            namespace
+                            key
+                            value
+                            description
+                        }
+                    }
+                }
+            }
+            userErrors {
+                field
+                message
             }
         }
     }
@@ -33,105 +74,207 @@ const UPDATE_PRICE = gql`
 
 class EditProduct extends React.Component {
     state = {
-        discount: '',
-        price: '',
+        item: '',
+        title: '',
         variantId: '',
-        showToast: false,
     };
 
     componentDidMount() {
-        this.setState({ discount: this.itemToBeConsumed() });
+        this.setItem();
     }
 
     render() {
-        const { name, price, discount, variantId } = this.state;
+        const { title, variantId } = this.state;
         return (
-            <Mutation mutation={UPDATE_PRICE}>
-                {(handleSubmit, { error, data }) => {
-                    const showError = error && <Banner status='critical'>{error.message}</Banner>;
-                    const showToast = data && data.productVariantUpdate && (
-                        <Toast
-                            content='Sucessfully updated'
-                            onDismiss={() => this.setState({ showToast: false })}
-                        />
-                    );
+            <Page>
+                <div style={{ margin: '0 auto', width: '80%' }}>
+                    <div style={{ margin: '20px' }}>
+                        <Heading>{title}</Heading>
+                        <Query query={GET_REVIEW_SUMMARY} variables={{ id: variantId }}>
+                            {({ data, loading, error }) => {
+                                if (loading) return <div>Loading...</div>;
+                                if (error) return <div>{error.message}</div>;
+                                if (data.product.metafields.edges.length == 0) {
+                                    return <div></div>;
+                                }
+                                if (data.product.metafields.edges.length == 0) {
+                                    return <div></div>;
+                                }
+                                const json = JSON.parse(
+                                    data.product.metafields.edges[0].node.value
+                                );
+                                console.log(json);
+                                return (
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            padding: '30px',
+                                            justifyContent: 'space-between',
+                                        }}
+                                    >
+                                        <h2 style={{ fontSize: '32px', fontWeight: 'bold' }}>
+                                            {json['average']}
+                                        </h2>
+                                        <Rating
+                                            name='half-rating'
+                                            defaultValue={parseInt(json['average'])}
+                                            precision={0.5}
+                                            size='large'
+                                        />
+                                        <span>{json['count']}件のレビュー</span>
+                                    </div>
+                                );
+                            }}
+                        </Query>
+                    </div>
+                    <Query query={GET_REVIEWS} variables={{ id: variantId }}>
+                        {({ data, loading, error }) => {
+                            if (loading) return <div>Loading…</div>;
+                            if (error) return <div>{error.message}</div>;
+                            if (data.product.metafields.edges.length == 0) {
+                                return (
+                                    <div style={{ margin: '0 auto', width: '80%' }}>
+                                        <div style={{ margin: '20px' }}>
+                                            <Heading>{title}</Heading>
+                                        </div>
+                                        <p>Reviewはまだありません</p>
+                                    </div>
+                                );
+                            }
+                            return (
+                                <Card>
+                                    <List>
+                                        {data.product.metafields.edges.map((value) => {
+                                            const json = JSON.parse(value.node.value);
+                                            return (
+                                                <ReviewTile
+                                                    json={json}
+                                                    key={value.node.key}
+                                                    metafieldId={value.node.id}
+                                                    variantId={variantId}
+                                                />
+                                            );
+                                        })}
+                                    </List>
+                                </Card>
+                            );
+                        }}
+                    </Query>
+                </div>
+            </Page>
+        );
+    }
+    setItem = () => {
+        const item = store.get('item');
+        const title = item.node.title;
+        const variantId = item.node.id;
+        this.setState({ item, title, variantId });
+    };
+}
 
+class ReviewTile extends React.Component {
+    render() {
+        return (
+            <ListItem>
+                <div className='main'>
+                    <div style={{ display: 'flex' }}>
+                        <Rating
+                            name='half-rating'
+                            defaultValue={parseInt(this.props.json['evaluation'])}
+                            precision={1}
+                        />
+                        <p style={{ marginLeft: '20px' }}>{this.props.json['name']}</p>
+                    </div>
+                    <h2>
+                        <TextStyle variation='strong'>{this.props.json['title']}</TextStyle>
+                    </h2>
+                    <div>{this.props.json['content']}</div>
+                </div>
+                <ListItemSecondaryAction>
+                    <VisibilityButton
+                        visibility={this.props.json['visibility']}
+                        variantId={this.props.variantId}
+                        metafieldId={this.props.metafieldId}
+                        json={this.props.json}
+                    />
+                </ListItemSecondaryAction>
+            </ListItem>
+        );
+    }
+}
+
+class VisibilityButton extends React.Component {
+    constructor(props) {
+        super(props);
+        let visibility;
+        if (this.props.visibility == 'true') {
+            visibility = true;
+        } else {
+            visibility = false;
+        }
+        this.state = {
+            visibility: visibility,
+        };
+    }
+
+    setVariables = () => {
+        let json = this.props.json;
+        if (this.state.visibility) {
+            json['visibility'] = 'false';
+        } else {
+            json['visibility'] = 'true';
+        }
+        console.log(json);
+        let variables = {
+            input: {
+                id: this.props.variantId,
+                metafields: [
+                    {
+                        id: this.props.metafieldId,
+                        value: JSON.stringify(json),
+                        valueType: 'JSON_STRING',
+                    },
+                ],
+            },
+        };
+        return variables;
+    };
+
+    render() {
+        return (
+            <Mutation mutation={UPDATE_METAFIELD}>
+                {(handleSubmit, { loading, error, data }) => {
+                    let icon;
+                    if (this.state.visibility) {
+                        icon = <AiFillEye size={32} />;
+                    } else {
+                        icon = <AiFillEyeInvisible size={32} />;
+                    }
+                    if (loading) {
+                        return <IconButton disabled={true}>{icon}</IconButton>;
+                    }
+                    if (data) {
+                        console.log(data);
+                    }
                     return (
-                        <Frame>
-                            <Page>
-                                <Layout>
-                                    {showToast}
-                                    <Layout.Section>{showError}</Layout.Section>
-                                    <Layout.Section>
-                                        <DisplayText size='large'>{name}</DisplayText>
-                                        <Form>
-                                            <Card sectioned>
-                                                <FormLayout>
-                                                    <FormLayout.Group>
-                                                        <TextField
-                                                            prefix='$'
-                                                            value={price}
-                                                            disabled={true}
-                                                            label='Original price'
-                                                            type='price'
-                                                        />
-                                                        <TextField
-                                                            prefix='$'
-                                                            value={discount}
-                                                            onChange={this.handleChange('discount')}
-                                                            label='Discounted price'
-                                                            type='discount'
-                                                        />
-                                                    </FormLayout.Group>
-                                                    <p>This sale price will expire in two weeks</p>
-                                                </FormLayout>
-                                            </Card>
-                                            <PageActions
-                                                primaryAction={[
-                                                    {
-                                                        content: 'Save',
-                                                        onAction: () => {
-                                                            const productVariableInput = {
-                                                                id: variantId,
-                                                                price: discount,
-                                                            };
-                                                            handleSubmit({
-                                                                variables: {
-                                                                    input: productVariableInput,
-                                                                },
-                                                            });
-                                                        },
-                                                    },
-                                                ]}
-                                                secondaryActions={[
-                                                    {
-                                                        content: 'Remove discount',
-                                                    },
-                                                ]}
-                                            />
-                                        </Form>
-                                    </Layout.Section>
-                                </Layout>
-                            </Page>
-                        </Frame>
+                        <IconButton
+                            onClick={() => {
+                                let variables = this.setVariables();
+                                handleSubmit({
+                                    variables: variables,
+                                });
+                                this.setState({
+                                    visibility: !this.state.visibility,
+                                });
+                            }}
+                        >
+                            {icon}
+                        </IconButton>
                     );
                 }}
             </Mutation>
         );
     }
-
-    handleChange = (field) => {
-        return (value) => this.setState({ [field]: value });
-    };
-
-    itemToBeConsumed = () => {
-        const item = store.get('item');
-        const price = item.variants.edges[0].node.price;
-        const variantId = item.variants.edges[0].node.id;
-        const discounter = price * 0.1;
-        this.setState({ price, variantId });
-        return (price - discounter).toFixed(2);
-    };
 }
 
 export default EditProduct;
