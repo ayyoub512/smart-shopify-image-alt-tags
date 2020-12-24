@@ -1,66 +1,120 @@
-import React from 'react';
-import { EmptyState, Layout, Page } from '@shopify/polaris';
-import { ResourcePicker, TitleBar } from '@shopify/app-bridge-react';
-import store from 'store-js';
-import ResourceListWithProducts from '../components/ResourceList';
+import React, { useEffect, useState } from 'react';
+import { gql, useQuery, useMutation } from '@apollo/client';
+import { Page } from '@shopify/polaris';
 
-const img = 'https://cdn.shopify.com/s/files/1/0757/9955/files/empty-state.svg';
+const BULK_INIT_MUTATION = gql`
+    mutation {
+        bulkOperationRunQuery(
+            query: """
+            {
+              products {
+                edges {
+                  node {
+                    id
+                    images{
+                      edges{
+                        node{
+                          id
+                          originalSrc
+                          altText
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """
+        ) {
+            bulkOperation {
+                id
+                status
+            }
+            userErrors {
+                field
+                message
+            }
+        }
+    }
+`;
 
-class Index extends React.Component {
-    state = { open: false };
-    render() {
-        /***
-         * true when there are no store ids found, false when there are store ids
-         * ultimetly, this should come from the database
-         */
-        const emptyState = !store.get('ids');
+const BULK_STATUS_QUERY = gql`
+    query {
+        currentBulkOperation {
+            id
+            status
+            errorCode
+            createdAt
+            completedAt
+            objectCount
+            fileSize
+            url
+            partialDataUrl
+        }
+    }
+`;
+
+const FetchData = () => {
+    const [createBulkRequest, { data: mutateData }] = useMutation(BULK_INIT_MUTATION);
+
+    const { data, startPolling, stopPolling } = useQuery(BULK_STATUS_QUERY);
+
+    if (data !== undefined) {
+        if (data.currentBulkOperation !== undefined) {
+            if (data.currentBulkOperation.url !== undefined) {
+                console.log(data);
+                console.log('stopping polling');
+                stopPolling();
+
+                const url = data.currentBulkOperation.url;
+
+                return (
+                    <Page>
+                        <div>
+                            <p>I got the data {url}</p>
+                        </div>
+                    </Page>
+                );
+            } else {
+                console.log('wait ', data);
+
+                return (
+                    <Page>
+                        <div>
+                            <p>Loading..</p>
+                        </div>
+                    </Page>
+                );
+            }
+        } else {
+            return (
+                <Page>
+                    <div>
+                        <p>Loadin 2..</p>
+                    </div>
+                </Page>
+            );
+        }
+    }
+    {
+        console.log('Initiating a bulk request');
+
+        createBulkRequest();
+        console.log('startPolling:', data);
+
+        startPolling(5000);
         return (
             <Page>
-                <TitleBar
-                    title='Sample App'
-                    primaryAction={{
-                        content: 'Select products',
-                        onAction: () => this.setState({ open: true }),
-                    }}
-                />
-                <ResourcePicker
-                    resourceType='Product'
-                    showVariants={false}
-                    open={this.state.open}
-                    onSelection={(resources) => this.handleSelection(resources)}
-                    onCancel={() => this.setState({ open: false })}
-                />
-
-                {/** checking weather there are store ids found */}
-                {emptyState ? (
-                    <Layout>
-                        <EmptyState
-                            heading='Discount your products temporarily'
-                            action={{
-                                content: 'Select products',
-                                onAction: () => this.setState({ open: true }),
-                            }}
-                            image={img}
-                        >
-                            <p>Select products to change their price temporarily.</p>
-                        </EmptyState>
-                    </Layout>
-                ) : (
-                    <ResourceListWithProducts />
-                )}
+                <div>
+                    <p>Loading..</p>
+                </div>
             </Page>
         );
     }
+};
 
-    handleSelection = (resources) => {
-        const idsFromResources = resources.selection.map((product) => product.id);
-
-        this.setState({ open: false });
-        console.log(idsFromResources);
-
-        /// i need to save this to the database somehow
-        store.set('ids', idsFromResources);
-    };
-}
+const Index = () => {
+    return <FetchData />;
+};
 
 export default Index;
