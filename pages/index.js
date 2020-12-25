@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { gql, useQuery, useMutation } from '@apollo/client';
 import { Page } from '@shopify/polaris';
+import LoadingComponent from '../components/LoadingComponent';
+import { Redirect } from '@shopify/app-bridge/actions';
+import { useRouter } from 'next/router';
 
 const BULK_INIT_MUTATION = gql`
     mutation {
@@ -55,59 +58,53 @@ const BULK_STATUS_QUERY = gql`
 `;
 
 const FetchData = () => {
+    const router = useRouter();
+
     const [createBulkRequest, { data: mutateData }] = useMutation(BULK_INIT_MUTATION);
 
     const { data, startPolling, stopPolling } = useQuery(BULK_STATUS_QUERY);
 
+    const status = data && data.status;
+
+    React.useEffect(() => {
+        console.log('inside effect, data is ', data);
+        if (status !== 'COMPLETED') {
+            createBulkRequest();
+            startPolling(5000);
+        }
+        return () => stopPolling();
+    }, [status]);
+
     if (data !== undefined) {
         if (data.currentBulkOperation !== undefined) {
             if (data.currentBulkOperation.url !== undefined) {
-                console.log(data);
-                console.log('stopping polling');
                 stopPolling();
 
                 const url = data.currentBulkOperation.url;
 
-                return (
-                    <Page>
-                        <div>
-                            <p>I got the data {url}</p>
-                        </div>
-                    </Page>
-                );
+                return <p>Redirecting to /processing </p>;
             } else {
-                console.log('wait ', data);
-
                 return (
                     <Page>
-                        <div>
-                            <p>Loading..</p>
-                        </div>
+                        else data.currentBulkOperation.url !== undefined
+                        <LoadingComponent />
                     </Page>
                 );
             }
         } else {
             return (
                 <Page>
-                    <div>
-                        <p>Loadin 2..</p>
-                    </div>
+                    ELSE data.currentBulkOperation !== undefined
+                    <LoadingComponent />
                 </Page>
             );
         }
     }
     {
-        console.log('Initiating a bulk request');
-
-        createBulkRequest();
-        console.log('startPolling:', data);
-
-        startPolling(5000);
         return (
             <Page>
-                <div>
-                    <p>Loading..</p>
-                </div>
+                default !== data
+                <LoadingComponent />
             </Page>
         );
     }

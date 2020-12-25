@@ -55,25 +55,6 @@ const BULK_STATUS_QUERY = gql`
 `;
 
 const Dash = () => {
-    // const [seconds, setSeconds] = useState(0);
-
-    // const [createBulkRequest, { data }] = useMutation(BULK_INIT_MUTATION);
-    // createBulkRequest();
-    // const { loading, error, data: myData } = useQuery(BULK_STATUS_QUERY);
-
-    // useEffect(() => {
-    //     console.log(myData);
-
-    //     // const timer = setInterval(() => {
-    //     //     setSeconds(seconds + 1);
-    //     // }, 2000);
-    //     // clearing interval
-    //     // return () => clearInterval(timer);
-    // }, [loading]);
-
-    // if (loading) return <div>BULK_STATUS_QUERY Loading...</div>;
-    // if (error) return <div>{error.message}</div>;
-    // console.log('Printing the Data ', myData);
     return <p>I geuss I got the data</p>;
 };
 
