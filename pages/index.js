@@ -1,117 +1,71 @@
-import React from 'react';
-import { gql, useQuery, useMutation } from '@apollo/client';
-import { Page } from '@shopify/polaris';
-import LoadingComponent from '../components/LoadingComponent';
+import { useContext } from 'react';
+import { EmptyState, Layout, Page } from '@shopify/polaris';
 import { Redirect } from '@shopify/app-bridge/actions';
-import { useRouter } from 'next/router';
+import { Context } from '@shopify/app-bridge-react';
 
-const BULK_INIT_MUTATION = gql`
-    mutation {
-        bulkOperationRunQuery(
-            query: """
-            {
-              products {
-                edges {
-                  node {
-                    id
-                    images{
-                      edges{
-                        node{
-                          id
-                          originalSrc
-                          altText
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-            """
-        ) {
-            bulkOperation {
-                id
-                status
-            }
-            userErrors {
-                field
-                message
-            }
-        }
-    }
-`;
+/** Database Imports */
+import dbConnect from '../utils/dbConnect';
+import Store from '../models/Store';
+// import Shop from '../models/Shop';
+const { getToken } = require('../utils/accessToken');
 
-const BULK_STATUS_QUERY = gql`
-    query {
-        currentBulkOperation {
-            id
-            status
-            errorCode
-            createdAt
-            completedAt
-            objectCount
-            fileSize
-            url
-            partialDataUrl
-        }
-    }
-`;
+const img = 'https://cdn.shopify.com/s/files/1/0757/9955/files/empty-state.svg';
 
-const FetchData = () => {
-    const router = useRouter();
+const Index = ({ token }) => {
+    const app = useContext(Context);
 
-    const [createBulkRequest, { data: mutateData }] = useMutation(BULK_INIT_MUTATION);
+    const redirectToProduct = () => {
+        /**
+         * More on context api here
+         * https://shopify.dev/tools/app-bridge/react-components/provider
+         */
 
-    const { data, startPolling, stopPolling } = useQuery(BULK_STATUS_QUERY);
+        // app.getState().then((state) => console.log(state));
+        const redirect = Redirect.create(app);
+        redirect.dispatch(Redirect.Action.APP, '/processing');
+    };
 
-    const status = data && data.status;
-
-    React.useEffect(() => {
-        console.log('inside effect, data is ', data);
-        if (status !== 'COMPLETED') {
-            createBulkRequest();
-            startPolling(5000);
-        }
-        return () => stopPolling();
-    }, [status]);
-
-    if (data !== undefined) {
-        if (data.currentBulkOperation !== undefined) {
-            if (data.currentBulkOperation.url !== undefined) {
-                stopPolling();
-
-                const url = data.currentBulkOperation.url;
-
-                return <p>Redirecting to /processing </p>;
-            } else {
-                return (
-                    <Page>
-                        else data.currentBulkOperation.url !== undefined
-                        <LoadingComponent />
-                    </Page>
-                );
-            }
-        } else {
-            return (
-                <Page>
-                    ELSE data.currentBulkOperation !== undefined
-                    <LoadingComponent />
-                </Page>
-            );
-        }
-    }
-    {
-        return (
-            <Page>
-                default !== data
-                <LoadingComponent />
-            </Page>
-        );
-    }
+    return (
+        <Page>
+            <Layout>
+                <EmptyState
+                    heading='First time here? no worries'
+                    action={{
+                        content: "Let's GO",
+                        onAction: () => {
+                            redirectToProduct();
+                        },
+                    }}
+                    image={img}
+                >
+                    <p>
+                        token: {token}
+                        convince me text goes here with multple lines explaining things user should
+                        do.
+                    </p>
+                </EmptyState>
+            </Layout>
+        </Page>
+    );
 };
 
-const Index = () => {
-    return <FetchData />;
-};
+/* Retrieves pet(s) data from mongodb database */
+export async function getServerSideProps(ctx) {
+    // const token = getToken();
+    // console.log('Access Token', token);
+
+    // await dbConnect();
+    // console.log(ctx.req.headers.cookie);
+
+    /* find all the data in our database */
+    // const result = await Store.find({});
+
+    // const newStore = new Store({ store: 'hi', accessToken: 'myToken' });
+    // const data = await newStore.save();
+
+    // console.log(data);
+
+    return { props: {} };
+}
 
 export default Index;

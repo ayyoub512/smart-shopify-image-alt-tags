@@ -4,6 +4,7 @@ import Head from 'next/head';
 import { AppProvider } from '@shopify/polaris';
 import { Provider } from '@shopify/app-bridge-react';
 import '@shopify/polaris/dist/styles.css';
+import Cookies from 'js-cookie';
 import translations from '@shopify/polaris/locales/en.json';
 import ClientRouter from '../components/ClientRouter';
 import { ApolloClient, ApolloProvider, InMemoryCache, createHttpLink } from '@apollo/client';
@@ -20,10 +21,10 @@ const client = new ApolloClient({
 
 class MyApp extends App {
     render() {
-        const { Component, pageProps, shopOrigin } = this.props;
+        const { Component, pageProps } = this.props;
         const config = {
             apiKey: API_KEY, // has to do with next.config.js I think because I have setup that variable there as well
-            shopOrigin,
+            shopOrigin: Cookies.get('shopOrigin'),
             forceRedirect: true,
         };
 
@@ -47,7 +48,6 @@ class MyApp extends App {
 }
 
 MyApp.getInitialProps = async ({ ctx }) => {
-    console.log('about to read the Shop Origin from _app.js line 29');
     return {
         shopOrigin: ctx.query.shop,
     };

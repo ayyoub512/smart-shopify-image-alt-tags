@@ -27,9 +27,33 @@ app.prepare().then(() => {
             apiKey: SHOPIFY_API_KEY,
             secret: SHOPIFY_API_SECRET_KEY,
             scopes: ['read_products', 'write_products'],
-            afterAuth(ctx) {
-                const urlParams = new URLSearchParams(ctx.request.url);
-                const shop = urlParams.get('shop');
+            async afterAuth(ctx) {
+                // const urlParams = new URLSearchParams(ctx.request.url);
+                // const shop = urlParams.get('shop');
+                const { shop, accessToken } = ctx.session;
+
+                ctx.cookies.set('shopOrigin', shop, {
+                    httpOnly: false,
+                    secure: true,
+                    sameSite: 'none',
+                });
+
+                const mysql = require('mysql');
+
+                // First you need to create a connection to the database
+                // Be sure to replace 'user' and 'password' with the correct values
+                const con = mysql.createConnection({
+                    host: process.env.MYSQL_HOST,
+                    user: process.env.MYSQL_USR,
+                    password: process.env.MYSQL_PWD,
+                    database: process.env.MYSQL_DB,
+                });
+
+                con.query(
+                    `INSERT INTO table (store, accessToken) VALUES("${shop}", "${accessToken}") ON DUPLICATE KEY UPDATE accessToken="${accessToken}"`
+                );
+
+                con.end();
 
                 ctx.redirect(`/?shop=${shop}`);
             },
