@@ -4,14 +4,11 @@ import { Redirect } from '@shopify/app-bridge/actions';
 import { Context } from '@shopify/app-bridge-react';
 
 /** Database Imports */
-import dbConnect from '../utils/dbConnect';
-import Store from '../models/Store';
-// import Shop from '../models/Shop';
-const { getToken } = require('../utils/accessToken');
+import store from '../models/Store';
 
 const img = 'https://cdn.shopify.com/s/files/1/0757/9955/files/empty-state.svg';
 
-const Index = ({ token }) => {
+const Index = ({ store }) => {
     const app = useContext(Context);
 
     const redirectToProduct = () => {
@@ -39,7 +36,7 @@ const Index = ({ token }) => {
                     image={img}
                 >
                     <p>
-                        token: {token}
+                        token: {store}
                         convince me text goes here with multple lines explaining things user should
                         do.
                     </p>
@@ -51,21 +48,12 @@ const Index = ({ token }) => {
 
 /* Retrieves pet(s) data from mongodb database */
 export async function getServerSideProps(ctx) {
-    // const token = getToken();
-    // console.log('Access Token', token);
+    const shop = ctx.query.shop;
+    if (!shop) throw 'No Shop error';
 
-    // await dbConnect();
-    // console.log(ctx.req.headers.cookie);
+    const data = await store.findOne({ store: shop });
 
-    /* find all the data in our database */
-    // const result = await Store.find({});
-
-    // const newStore = new Store({ store: 'hi', accessToken: 'myToken' });
-    // const data = await newStore.save();
-
-    // console.log(data);
-
-    return { props: {} };
+    return { props: { store: shop } };
 }
 
 export default Index;

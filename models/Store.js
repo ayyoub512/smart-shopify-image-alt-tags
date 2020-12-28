@@ -1,8 +1,5 @@
-// import mongoose, { models } from 'mongoose';
-const mongoose = require('mongoose');
-// const models = mongoose.models;
+const mongoose = require('../utils/dbConnect');
 
-/* PetSchema will correspond to a collection in your MongoDB database. */
 const StoreSchema = new mongoose.Schema({
     store: {
         /* The name of this pet */
@@ -14,29 +11,11 @@ const StoreSchema = new mongoose.Schema({
         required: [true, 'An accessToken is required.'],
     },
     date: {
-        type: Date,
-        default: Date.now,
+        type: String,
+        required: [true, 'date is required'],
     },
 });
 
-console.log('Printing Mongoose');
 console.log(mongoose.models);
 
-// let store = mongoose.models.store || mongoose.model('store', StoreSchema);
-
-// module.exports = store;
-
-// module.exports = Object.is(mongoose.models.store, undefined)
-//     ? mongoose.model('store', StoreSchema)
-//     : mongoose.models.store;
-
-// module.exports =
-//     mongoose.models.store === undefined
-//         ? mongoose.model('store', StoreSchema)
-//         : mongoose.models.store;
-
-// module.exports = Store = mongoose.model('Store', StoreSchema);
-// export default mongoose.model('Store', StoreSchema);
-// module.exports = Store = mongoose.model('store', StoreSchema);
-/** Dont know why this but following https://stackabuse.com/mongoose-with-nodejs-object-data-modeling/ */
-// module.exports.db = mongoose;
+module.exports = Store = mongoose.model('store', StoreSchema);

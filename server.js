@@ -15,6 +15,11 @@ const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
+/** DATABASE IMPORTS */
+// const mongoose = require('mongoose');
+let mongoose = require('./utils/dbConnect');
+let store = require('./models/Store');
+
 const { SHOPIFY_API_SECRET_KEY, SHOPIFY_API_KEY } = process.env;
 
 app.prepare().then(() => {
@@ -38,22 +43,39 @@ app.prepare().then(() => {
                     sameSite: 'none',
                 });
 
-                const mysql = require('mysql');
-
-                // First you need to create a connection to the database
-                // Be sure to replace 'user' and 'password' with the correct values
-                const con = mysql.createConnection({
-                    host: process.env.MYSQL_HOST,
-                    user: process.env.MYSQL_USR,
-                    password: process.env.MYSQL_PWD,
-                    database: process.env.MYSQL_DB,
-                });
-
-                con.query(
-                    `INSERT INTO table (store, accessToken) VALUES("${shop}", "${accessToken}") ON DUPLICATE KEY UPDATE accessToken="${accessToken}"`
+                await store.findOneAndUpdate(
+                    { store: shop },
+                    { accessToken: accessToken, date: JSON.stringify(new Date()) },
+                    { upsert: true }
                 );
 
-                con.end();
+                // await dbConnect();
+
+                // const StoreSchema = new mongoose.Schema({
+                //     store: {
+                //         /* The name of this pet */
+                //         type: String,
+                //         required: [true, 'Please provide a store.'],
+                //     },
+                //     accessToken: {
+                //         type: String,
+                //         required: [true, 'An accessToken is required.'],
+                //     },
+                //     date: {
+                //         type: String,
+                //         required: [true, 'date is required'],
+                //     },
+                // });
+
+                // let Store = mongoose.models.store || mongoose.model('store', StoreSchema);
+
+                // await Store.findOneAndUpdate(
+                //     { store: shop },
+                //     { accessToken: accessToken, date: JSON.stringify(new Date()) },
+                //     { upsert: true }
+                // );
+
+                // mongoose.connection.close();
 
                 ctx.redirect(`/?shop=${shop}`);
             },
@@ -72,6 +94,6 @@ app.prepare().then(() => {
     });
 
     server.listen(port, () => {
-        console.log(`> Ready on http://localhost:${port}`);
+        console.log(`> Ready on https://localhost:${port}`);
     });
 });

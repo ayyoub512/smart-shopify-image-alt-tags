@@ -1,19 +1,23 @@
-const mongose = require('mongoose');
+const mongoose = require('mongoose');
 
-const dbConnect = async () => {
-    try {
-        await mongose.connect(process.env.MONGODB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-            createIndexes: true,
-            useFindAndModify: false,
-        });
+Object.keys(mongoose.connection.models).forEach((key) => {
+    delete mongoose.connection.models[key];
+});
 
-        console.log('db connected ...');
-    } catch (err) {
-        console.log(err);
-        process.exit(1);
-    }
-};
+try {
+    mongoose.connect(process.env.MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        createIndexes: true,
+        useFindAndModify: false,
+    });
 
-module.exports = dbConnect;
+    mongoose.Promise = global.Promise;
+
+    console.log('db connected ...');
+} catch (err) {
+    console.log(err);
+    process.exit(1);
+}
+
+module.exports = mongoose;
