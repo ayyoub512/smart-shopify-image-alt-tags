@@ -20,8 +20,16 @@ const client = new ApolloClient({
 });
 
 class MyApp extends App {
+    state = {};
+
     render() {
         const { Component, pageProps } = this.props;
+        // console.log('this.props');
+        // console.log(this.props);
+
+        // console.log('this.component');
+        // console.log(Component);
+
         const config = {
             apiKey: API_KEY, // has to do with next.config.js I think because I have setup that variable there as well
             shopOrigin: Cookies.get('shopOrigin'),

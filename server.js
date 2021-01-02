@@ -6,24 +6,60 @@ const { default: createShopifyAuth } = require('@shopify/koa-shopify-auth');
 const { verifyRequest } = require('@shopify/koa-shopify-auth');
 const session = require('koa-session');
 
+const path = require('path');
+
+const mysql = require('mysql');
+
+/***
+ * the end of
+ * imports
+ */
+
 dotenv.config();
 const { default: graphQLProxy } = require('@shopify/koa-shopify-graphql-proxy');
 const { ApiVersion } = require('@shopify/koa-shopify-graphql-proxy');
 
 const port = parseInt(process.env.PORT, 10) || 3000;
 const dev = process.env.NODE_ENV !== 'production';
+
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
-/** DATABASE IMPORTS */
-// const mongoose = require('mongoose');
-let mongoose = require('./utils/dbConnect');
-let store = require('./models/Store');
+/** DEFININE OUR GOLABAL PATH */
+global.appRoot = path.resolve(__dirname);
+
+/**
+ * Connecting to the database
+ * */
+
+var dbConn = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+});
+
+dbConn.connect(function (err) {
+    if (err) throw err;
+    console.log('> Connected to mysql server');
+});
+global.db = dbConn;
+
+/***
+ * END OF CONNECTING TO THE DATABASE
+ */
 
 const { SHOPIFY_API_SECRET_KEY, SHOPIFY_API_KEY } = process.env;
 
 app.prepare().then(() => {
     const server = new Koa();
+    server.context.db = dbConn;
+    /**
+     * https://github.com/devwiz73/shopify-app-boilerplate/blob/master/server.js
+     * app.context is the prototype from which ctx is created.
+     * You may add additional properties to ctx by editing app.context.
+     */
+
     server.use(session({ secure: true, sameSite: 'none' }, server));
     server.keys = [SHOPIFY_API_SECRET_KEY];
 
@@ -31,10 +67,9 @@ app.prepare().then(() => {
         createShopifyAuth({
             apiKey: SHOPIFY_API_KEY,
             secret: SHOPIFY_API_SECRET_KEY,
-            scopes: ['read_products', 'write_products'],
+            scopes: ['read_products', 'write_products', 'read_assigned_fulfillment_orders'],
+
             async afterAuth(ctx) {
-                // const urlParams = new URLSearchParams(ctx.request.url);
-                // const shop = urlParams.get('shop');
                 const { shop, accessToken } = ctx.session;
 
                 ctx.cookies.set('shopOrigin', shop, {
@@ -43,44 +78,15 @@ app.prepare().then(() => {
                     sameSite: 'none',
                 });
 
-                await store.findOneAndUpdate(
-                    { store: shop },
-                    { accessToken: accessToken, date: JSON.stringify(new Date()) },
-                    { upsert: true }
-                );
+                console.log('> Authenticated: ' + shop + ' - ' + accessToken);
 
-                // await dbConnect();
-
-                // const StoreSchema = new mongoose.Schema({
-                //     store: {
-                //         /* The name of this pet */
-                //         type: String,
-                //         required: [true, 'Please provide a store.'],
-                //     },
-                //     accessToken: {
-                //         type: String,
-                //         required: [true, 'An accessToken is required.'],
-                //     },
-                //     date: {
-                //         type: String,
-                //         required: [true, 'date is required'],
-                //     },
-                // });
-
-                // let Store = mongoose.models.store || mongoose.model('store', StoreSchema);
-
-                // await Store.findOneAndUpdate(
-                //     { store: shop },
-                //     { accessToken: accessToken, date: JSON.stringify(new Date()) },
-                //     { upsert: true }
-                // );
-
-                // mongoose.connection.close();
+                const shopModel = require('./models/shops');
+                shopModel.addShop(shop, accessToken);
 
                 ctx.redirect(`/?shop=${shop}`);
             },
         })
-    );
+    ); /** END OF CUSTOM MILDDLWARE */
 
     server.use(graphQLProxy({ version: ApiVersion.October19 }));
 

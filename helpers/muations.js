@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { gql, useQuery, useMutation } from '@apollo/client';
-import { Page } from '@shopify/polaris';
+import { gql } from '@apollo/client';
 
-const BULK_INIT_MUTATION = gql`
+export const BULK_INIT_MUTATION = gql`
     mutation {
         bulkOperationRunQuery(
             query: """
@@ -11,6 +9,7 @@ const BULK_INIT_MUTATION = gql`
                 edges {
                   node {
                     id
+                    title
                     images{
                       edges{
                         node{
@@ -38,7 +37,7 @@ const BULK_INIT_MUTATION = gql`
     }
 `;
 
-const BULK_STATUS_QUERY = gql`
+export const BULK_STATUS_QUERY = gql`
     query {
         currentBulkOperation {
             id
@@ -53,9 +52,3 @@ const BULK_STATUS_QUERY = gql`
         }
     }
 `;
-
-const Dash = () => {
-    return <p>I geuss I got the data</p>;
-};
-
-export default Dash;
