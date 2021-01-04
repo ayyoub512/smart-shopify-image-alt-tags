@@ -1,8 +1,5 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import axios from 'axios';
-import { EmptyState, Layout, Page, Card } from '@shopify/polaris';
-import { Redirect } from '@shopify/app-bridge/actions';
-import { Context } from '@shopify/app-bridge-react';
 import AltTextForm from '../components/AltTextForm';
 import { findShopByName } from '../models/shops';
 import { GET_IMGS_QUERY } from '../helpers/queries';

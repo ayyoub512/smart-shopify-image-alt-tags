@@ -25,6 +25,13 @@ function AltTextForm(props) {
 
     const handleTextFieldChange = useCallback((value) => setTextFieldValue(value), []);
 
+    /** HANDLES THE ON SUBMIT BUTTON */
+    const handleSubmit = (e) => {
+        let templateValue = textFieldValue.trim();
+        if (templateValue.length > 0) {
+        }
+    };
+
     return (
         <Page title='Settings'>
             <Layout>
@@ -34,7 +41,10 @@ function AltTextForm(props) {
                     </Card>
                 </Layout.Section>
                 <Layout.Section oneHalf>
-                    <Card title='Set an image alt text template' primaryFooterAction={{ content: 'Optimize Now' }}>
+                    <Card
+                        title='Set an image alt text template'
+                        primaryFooterAction={{ content: 'Optimize Now', onAction: (e) => handleSubmit(e) }}
+                    >
                         <Card.Section>
                             <TextField
                                 value={textFieldValue}
@@ -58,8 +68,8 @@ function AltTextForm(props) {
                                         [variant_title]
                                     </Tag>
 
-                                    <Tag onClick={(e) => setTextFieldValue(textFieldValue + '[product_handler]')}>
-                                        [product_handler]
+                                    <Tag onClick={(e) => setTextFieldValue(textFieldValue + '[product_handle]')}>
+                                        [product_handle]
                                     </Tag>
 
                                     <Tag onClick={(e) => setTextFieldValue(textFieldValue + '[product_vendor]')}>
@@ -78,6 +88,53 @@ function AltTextForm(props) {
                         </Card.Section>
                     </Card>
                 </Layout.Section>
+
+                <Layout.AnnotatedSection
+                    title='Explaining the template values'
+                    description='We thought its a good idea to explain what each value does with a correspondent exemple pulled from your store.'
+                >
+                    <Card title='More info about above values'>
+                        <Card.Section>
+                            <TextContainer>
+                                <p>
+                                    <Tag>[product_handle]</Tag> Very useful, refers to the product handle, exemple
+                                    /products/this-is-the-product-handle
+                                </p>
+                                Ex: <TextStyle variation='code'> this-is-the-product-handle </TextStyle>
+                            </TextContainer>
+                        </Card.Section>
+
+                        <Card.Section>
+                            <TextContainer>
+                                <p>
+                                    <Tag>[product_handle]</Tag> Very useful, refers to the product handle, exemple
+                                    /products/this-is-the-product-handle
+                                </p>
+                                Ex: <TextStyle variation='code'> this-is-the-product-handle </TextStyle>
+                            </TextContainer>
+                        </Card.Section>
+
+                        <Card.Section>
+                            <TextContainer>
+                                <p>
+                                    <Tag>[product_handle]</Tag> Very useful, refers to the product handle, exemple
+                                    /products/this-is-the-product-handle
+                                </p>
+                                Ex: <TextStyle variation='code'> this-is-the-product-handle </TextStyle>
+                            </TextContainer>
+                        </Card.Section>
+
+                        <Card.Section>
+                            <TextContainer>
+                                <p>
+                                    <Tag>[product_handle]</Tag> Very useful, refers to the product handle, exemple
+                                    /products/this-is-the-product-handle
+                                </p>
+                                Ex: <TextStyle variation='code'> this-is-the-product-handle </TextStyle>
+                            </TextContainer>
+                        </Card.Section>
+                    </Card>
+                </Layout.AnnotatedSection>
             </Layout>
         </Page>
     );
