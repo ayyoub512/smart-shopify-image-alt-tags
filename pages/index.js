@@ -74,7 +74,7 @@ export async function getServerSideProps(ctx) {
                     // console.log('Handle: ', product.node.handle);
                     // console.log('Vendor: ', product.node.vendor);
                     // console.log('Product Type: ', product.node.productType);
-                    console.log('Link', product.node.featuredImage.originalSrc);
+                    // console.log('Link', product.node.featuredImage.originalSrc);
 
                     const title = product.node.title.toString();
                     const handle = product.node.handle.toString();
@@ -94,9 +94,9 @@ export async function getServerSideProps(ctx) {
         }
     }
 
-    console.log('typeof products');
-    console.log(typeof products);
-    console.log(products);
+    // console.log('typeof products');
+    // console.log(typeof products);
+    // console.log(products);
 
     return {
         props: {

@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client';
 
-export const BULK_INIT_MUTATION = gql`
+export const BULK_INIT_MUTATION = `
     mutation {
         bulkOperationRunQuery(
             query: """
@@ -37,7 +37,7 @@ export const BULK_INIT_MUTATION = gql`
     }
 `;
 
-export const BULK_STATUS_QUERY = gql`
+export const BULK_STATUS_QUERY = `
     query {
         currentBulkOperation {
             id

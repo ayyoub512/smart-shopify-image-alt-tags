@@ -1,9 +1,8 @@
-import React, { useState, useCallback } from 'react';
-// import { Loading } from '@shopify/app-bridge-react';
-
+import React, { useState, useCallback, useEffect } from 'react';
+import axios from 'axios';
 import {
     TextField,
-    Button,
+    Banner,
     Card,
     Form,
     Stack,
@@ -17,10 +16,14 @@ import {
     Subheading,
 } from '@shopify/polaris';
 
+import LoadingComponent from './LoadingComponent';
+
 const imgSrc =
     'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/young-man-in-bright-fashion_925x_f7029e2b-80f0-4a40-a87b-834b9a283c39.jpg?v=1608301949';
 
 function AltTextForm(props) {
+    const [isLoading, setLoding] = useState(false);
+
     const [textFieldValue, setTextFieldValue] = useState('[product_title][variant_title] - [shop_name]');
 
     const handleTextFieldChange = useCallback((value) => setTextFieldValue(value), []);
@@ -29,11 +32,34 @@ function AltTextForm(props) {
     const handleSubmit = (e) => {
         let templateValue = textFieldValue.trim();
         if (templateValue.length > 0) {
+            axios
+                .post('/api/shopify/', {
+                    templateValue,
+                })
+                .then(
+                    (result) => {
+                        console.log(result);
+                    },
+                    // Note: it's important to handle errors here
+                    // instead of a catch() block so that we don't swallow
+                    // exceptions from actual bugs in components.
+                    (err) => {
+                        console.log(err);
+                    }
+                );
+
+            setLoding(true);
         }
     };
 
+    // if (isLoading) {
+    //     return <LoadingComponent processing={true} />;
+    // }
+
     return (
         <Page title='Settings'>
+            {isLoading && <Banner title='Sent '>Sent</Banner>}
+
             <Layout>
                 <Layout.Section oneHalf>
                     <Card sectioned>
@@ -140,21 +166,22 @@ function AltTextForm(props) {
     );
 }
 
-// /* Retrieves pet(s) data from mongodb database */
-export async function getServerSideProps(ctx) {
-    const shop = ctx.query.shop;
-    console.log(db);
-    if (!shop) throw ' getServerSideProps(ctx) if (!shop) throw';
+// // /* Retrieves pet(s) data from mongodb database */
+// export async function getServerSideProps(ctx) {
+//     const shop = ctx.query.shop;
+//     let token;
+//     console.log(db);
+//     if (!shop) throw ' getServerSideProps(ctx) if (!shop) throw';
 
-    findShopByName(shop)
-        .then((data) => {
-            console.log(data);
-        })
-        .catch((err) => {
-            console.log(err);
-        });
+//     findShopByName(shop)
+//         .then((data) => {
+//             console.log('data', data);
+//         })
+//         .catch((err) => {
+//             console.log(err);
+//         });
 
-    return { props: { shop: shop } };
-}
+//     return { props: { shop: shop } };
+// }
 
 export default AltTextForm;

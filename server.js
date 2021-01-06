@@ -10,6 +10,8 @@ const path = require('path');
 
 const mysql = require('mysql');
 
+const jwt = require('jsonwebtoken');
+
 /***
  * the end of
  * imports
@@ -72,16 +74,26 @@ app.prepare().then(() => {
             async afterAuth(ctx) {
                 const { shop, accessToken } = ctx.session;
 
+                const shopModel = require('./models/shops');
+                shopModel.addShop(shop, accessToken);
+
+                console.log('> Authenticated+Saved : ' + shop + ' -token- ' + accessToken);
+
+                /***
+                 * JWT
+                 */
+                const token = jwt.sign({ shop_origin: shop, access_token: accessToken }, process.env.JWT_SECRET);
+                ctx.cookies.set('x-auth-token', token, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: 'none',
+                });
+
                 ctx.cookies.set('shopOrigin', shop, {
                     httpOnly: false,
                     secure: true,
                     sameSite: 'none',
                 });
-
-                console.log('> Authenticated: ' + shop + ' - ' + accessToken);
-
-                const shopModel = require('./models/shops');
-                shopModel.addShop(shop, accessToken);
 
                 ctx.redirect(`/?shop=${shop}`);
             },

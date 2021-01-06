@@ -33,7 +33,7 @@ class MyApp extends App {
         const config = {
             apiKey: API_KEY, // has to do with next.config.js I think because I have setup that variable there as well
             shopOrigin: Cookies.get('shopOrigin'),
-            forceRedirect: true,
+            forceRedirect: false,
         };
 
         return (
