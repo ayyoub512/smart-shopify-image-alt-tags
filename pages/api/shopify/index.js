@@ -5,6 +5,7 @@ const Path = require('path');
 var jwt = require('jsonwebtoken');
 const shops = require('../../../models/shops');
 import { BULK_STATUS_QUERY, BULK_INIT_MUTATION } from '../../..//helpers/muations';
+import { addShop } from '../../../models/shops';
 
 /**
  *
@@ -13,39 +14,45 @@ import { BULK_STATUS_QUERY, BULK_INIT_MUTATION } from '../../..//helpers/muation
  * @param {Http2ServerResponse} resp : secret access token
  * @description Handels sending the bulk request and retreive the bulk request data back from the shopify api
  */
-const bulkStatusQuery = async (shop, token, url) => {
+const bulkStatusQuery = (shop, token) => {
     return new Promise((resolve, reject) => {
         const apiUrl = 'https://' + shop + '/admin/api/2021-01/graphql.json';
 
         // repeat with the interval of 2 seconds
-        let timerId = setInterval(() => {
-            axios({
-                url: apiUrl,
-                method: 'post',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Shopify-Access-Token': token,
-                },
-                data: {
-                    query: BULK_STATUS_QUERY,
-                },
-            })
-                .then((res) => {
-                    // console.log('GOT THIS BACK  >', res.data);
-                    const url = res.data.currentBulkOperation.url;
-                    console.log('I am here, the data is', data, ' -- and the url is ', url);
-                    if (url) {
-                        console.log('Clearing the interval with the timer id :', timerId);
-                        clearInterval(timerId);
-                    }
+        try {
+            let timerId = setInterval(() => {
+                console.log('New Interval');
+                axios({
+                    url: apiUrl,
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Shopify-Access-Token': token,
+                    },
+                    data: {
+                        query: BULK_STATUS_QUERY,
+                    },
                 })
-                .catch((err) => {
-                    reject(err);
-                });
-        }).catch((err) => {
-            console.log('Init bulk request error : ', err.message ? err.message : err);
-        });
-    }, 10000);
+                    .then((res) => {
+                        const url = res.data.data.currentBulkOperation.url;
+                        console.log('\n \n \n >>> the url is ');
+                        if (url) {
+                            clearInterval(timerId);
+                            console.log('[+] Cleared the Interval');
+                            resolve(url);
+                        }
+                    })
+                    .catch((err) => {
+                        console.log('Line 46 inside the bulk query status ' + err);
+                    });
+            }, 10000);
+        } catch (err) {
+            console.log('Line 50 try catch inside the bulk query status ' + err);
+            reject(err);
+        }
+    }).catch((err) => {
+        console.log('Line 50 try catch inside the bulk query status ' + err);
+    });
 };
 
 /**
@@ -55,7 +62,7 @@ const bulkStatusQuery = async (shop, token, url) => {
  * @param {Http2ServerResponse} resp : secret access token
  * @description Handels sending the bulk request and retreive the bulk request data back from the shopify api
  */
-const initBulkRequest = async (shop, token) => {
+const initBulkRequest = (shop, token) => {
     return new Promise((resolve, reject) => {
         const url = 'https://' + shop + '/admin/api/2021-01/graphql.json';
         axios({
@@ -70,15 +77,21 @@ const initBulkRequest = async (shop, token) => {
             },
         })
             .then((res) => {
-                const url = res.data.data.bulkOperationRunQuery.bulkOperation.id;
-                if (!url) {
-                    reject('Server Error, Please try again.');
+                const userErrorsObject = res.data.data.bulkOperationRunQuery.userErrors;
+                const errorsChildrens = Object.keys(userErrorsObject);
+
+                if (errorsChildrens.length > 0) {
+                    res.data.data.bulkOperationRunQuery.userErrors.map((item) => {
+                        console.log(item.message);
+                    });
                 } else {
-                    resolve(url);
+                    console.log('\n[+] Init ID: ', res.data.data.bulkOperationRunQuery.bulkOperation.id);
                 }
+
+                resolve();
             })
             .catch((err) => {
-                reject(err);
+                reject('Axios.catch init bulk request errro : -> ' + err);
             });
     }).catch((err) => {
         console.log('Init bulk request error : ', err.message ? err.message : err);
@@ -124,15 +137,13 @@ export default async function templateForm(req, res) {
 
                         initBulkRequest(decoded.shop_origin, decoded.access_token)
                             .then((url) => {
-                                if (url) {
-                                    bulkStatusQuery(decoded.shop_origin, decoded.access_token, url)
-                                        .then((res) => {
-                                            console.log('inside the index.s', res);
-                                        })
-                                        .catch((err) => {
-                                            reject('Error while BulkStatus:136');
-                                        });
-                                }
+                                bulkStatusQuery(decoded.shop_origin, decoded.access_token)
+                                    .then((myData) => {
+                                        console.log('Data gg .. ');
+                                    })
+                                    .catch((err) => {
+                                        console.log('rer', err);
+                                    });
                             })
                             .catch((err) => {
                                 reject('Error while InitBulkRequest:105');
