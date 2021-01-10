@@ -1,6 +1,7 @@
+/** Query to get the last added 10 products */
 export const GET_IMGS_QUERY = `
         query getIMGS{
-            products(first: 1, reverse: true) {
+            products(first: 10, reverse: true) {
                 edges {
                     node {
                         id
@@ -19,6 +20,7 @@ export const GET_IMGS_QUERY = `
             shop{
                 name
                 email
+                contactEmail
             }
 
         }

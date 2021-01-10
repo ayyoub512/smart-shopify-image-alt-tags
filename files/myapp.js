@@ -4,35 +4,58 @@ const fs = require('fs');
 let res = {};
 
 function processLine(line) {
-    const { id, __parentId } = JSON.parse(line);
-
-    // console.log('ID:', id);
-    // console.log('Parent ID', __parentId);
+    const myLine = JSON.parse(line);
+    const { id, __parentId, title, featuredImage, options, vendor, productType, handle } = myLine;
 
     // if there is no `__parentId`, this is a parent
     if (typeof __parentId === 'undefined') {
-        res[line.id] = {
+        res[id] = {
             id,
-            childrens: [],
+            title,
+            vendor,
+            productType,
+            handle,
+            featuredImage: featuredImage ?? {},
+            options: options ?? [],
+            productVariants: [],
+            productImages: [],
         };
+
         return res;
     }
 
     // this is a child, create its parent if necessary
-    if (typeof res[__parentId] === 'undefined') {
+    if (res[__parentId] === 'undefined') {
         res[__parentId] = {
             id: __parentId,
-            childrens: [],
+            title,
+            vendor,
+            productType,
+            handle,
+            featuredImage: featuredImage ?? {},
+            options: options ?? [],
+            productVariants: [],
+            productImages: [],
         };
     }
 
-    // add child to parent's children
-    res[__parentId].childrens.push(line);
+    /**
+     * DOWN HERE WE MUST HAVE {id: "xx", childrens: []}
+     * so now lets check if its a product image || variant
+     *  // res[__parentId].childrens.push(myLine);
+     */
+
+    if (id.includes('ProductVariant')) {
+        res[__parentId].productVariants.push(myLine);
+    } else {
+        // It must be productImage then
+        res[__parentId].productImages.push(myLine);
+    }
     return res;
 }
 
 const readInterface = readline.createInterface({
-    input: fs.createReadStream('679aa7bd-a6a0-402d-96b7-5add2d68f5c7.JSONL'),
+    input: fs.createReadStream('data.jsonl'),
     // output: process.stdout,
     console: false,
 });
@@ -41,5 +64,5 @@ readInterface.on('line', processLine);
 
 readInterface.on('close', function () {
     const resultArray = Object.values(res);
-    // console.log(resultArray);
+    console.log(resultArray.length);
 });

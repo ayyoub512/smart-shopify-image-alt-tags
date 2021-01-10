@@ -1,9 +1,12 @@
 var jwt = require('jsonwebtoken');
 const shops = require('../../../models/shops');
 const getBulkData = require('../../../helpers/getBulkData');
+const processBulkData = require('../../../helpers/processBulkData');
+const Path = require('path');
+const fs = require('fs');
 
 /**
- * @description Gets called when the user submites the tempalate form
+ * @description Gets called when the user submites the tempalate
  * @URI /api/shopify/
  */
 export default async function templateForm(req, res) {
@@ -49,7 +52,47 @@ export default async function templateForm(req, res) {
                                         getBulkData
                                             .downloadJSONL(jsonlURL)
                                             .then((jsonlPath) => {
-                                                console.log('Download: ', jsonlPath);
+                                                console.log('\n [+] Stored to: ', jsonlPath);
+
+                                                /** Proccess the bulk Data here */
+                                                processBulkData
+                                                    .readFile(jsonlPath)
+                                                    .then((data) => {
+                                                        console.log('\n\n WRITING DATA TO A NEW FILE');
+
+                                                        const path = Path.resolve(
+                                                            global.appRoot,
+                                                            'files',
+                                                            'mydata.json'
+                                                        );
+
+                                                        fs.writeFile(
+                                                            path,
+
+                                                            JSON.stringify(data),
+
+                                                            function (err) {
+                                                                if (err) {
+                                                                    console.error('Crap happens', err);
+                                                                }
+                                                            }
+                                                        );
+
+                                                        // var file = fs.createWriteStream(path);
+                                                        // file.on('error', function (err) {
+                                                        //     /* error handling */
+                                                        //     console.log('Error while writing' + err);
+                                                        // });
+
+                                                        // data.forEach((v) => {
+                                                        //     file.write(v.toString());
+                                                        // });
+                                                        // file.end();
+                                                        resolve();
+                                                    })
+                                                    .catch((err) => {
+                                                        reject('Erro on index:processBulkData.readfile.catch: ' + err);
+                                                    });
                                             })
                                             .catch((err) => {
                                                 reject('Error, Index(downloadJSONL.catch): ' + err);
