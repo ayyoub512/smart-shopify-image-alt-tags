@@ -1,7 +1,7 @@
 var jwt = require('jsonwebtoken');
-const shops = require('../../../models/shops');
+const shops = require('../../../db/shops');
 const getBulkData = require('../../../helpers/getBulkData');
-const processBulkData = require('../../../helpers/processBulkData');
+const processData = require('../../../helpers/processData.js');
 const Path = require('path');
 const fs = require('fs');
 
@@ -37,73 +37,30 @@ export default async function templateForm(req, res) {
                     decoded.access_token
                 ) {
                     if (data.shop_origin == decoded.shop_origin && data.access_token == decoded.access_token) {
-                        /**
-                         * Initiate a bulk request with interval
-                         * here
-                         */
-
                         getBulkData
-                            .initBulkRequest(decoded.shop_origin, decoded.access_token)
-                            .then((operationId) => {
-                                getBulkData
-                                    .bulkStatusQuery(decoded.shop_origin, decoded.access_token)
-                                    .then((jsonlURL) => {
-                                        console.log('Downloading the JSONL url');
-                                        getBulkData
-                                            .downloadJSONL(jsonlURL)
-                                            .then((jsonlPath) => {
-                                                console.log('\n [+] Stored to: ', jsonlPath);
+                            .getBulkData(decoded.shop_origin, decoded.access_token)
+                            .then((jsonFile) => {
+                                processData
+                                    .process(
+                                        decoded.shop_origin,
+                                        decoded.access_token,
+                                        jsonFile,
+                                        templateValue
+                                    ) /** Proccess the bulk Data here */
+                                    .then((data) => {
+                                        /**
+                                         * too many promises Let's make one last promise
+                                         *
+                                         */
 
-                                                /** Proccess the bulk Data here */
-                                                processBulkData
-                                                    .readFile(jsonlPath)
-                                                    .then((data) => {
-                                                        console.log('\n\n WRITING DATA TO A NEW FILE');
-
-                                                        const path = Path.resolve(
-                                                            global.appRoot,
-                                                            'files',
-                                                            'mydata.json'
-                                                        );
-
-                                                        fs.writeFile(
-                                                            path,
-
-                                                            JSON.stringify(data),
-
-                                                            function (err) {
-                                                                if (err) {
-                                                                    console.error('Crap happens', err);
-                                                                }
-                                                            }
-                                                        );
-
-                                                        // var file = fs.createWriteStream(path);
-                                                        // file.on('error', function (err) {
-                                                        //     /* error handling */
-                                                        //     console.log('Error while writing' + err);
-                                                        // });
-
-                                                        // data.forEach((v) => {
-                                                        //     file.write(v.toString());
-                                                        // });
-                                                        // file.end();
-                                                        resolve();
-                                                    })
-                                                    .catch((err) => {
-                                                        reject('Erro on index:processBulkData.readfile.catch: ' + err);
-                                                    });
-                                            })
-                                            .catch((err) => {
-                                                reject('Error, Index(downloadJSONL.catch): ' + err);
-                                            });
+                                        resolve();
                                     })
                                     .catch((err) => {
-                                        reject('Error, Index(BulkStatusQuery.catch): ' + err);
+                                        reject('Erro on index:processBulkData.readfile.catch: ' + err);
                                     });
                             })
                             .catch((err) => {
-                                reject('Error while InitBulkRequest:105');
+                                reject('Error while index.js.getBulkData.catch: ' + err);
                             });
                     } else {
                         throw new Error('cookies auth error 1');

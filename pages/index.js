@@ -2,8 +2,8 @@ import React from 'react';
 import axios from 'axios';
 
 import AltTextForm from '../components/AltTextForm';
-import { findShopByName, updateFields } from '../models/shops';
-import { GET_IMGS_QUERY } from '../helpers/queries';
+import { findShopByName, updateFields } from '../db/shops';
+import { GET_IMGS_QUERY } from '../db/queries';
 import ErrorsHandler from '../components/ErrorsHandler';
 import { parseCookies } from '../helpers/parseCookies';
 import { randomNumber } from '../helpers/randomNum';

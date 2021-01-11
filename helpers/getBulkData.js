@@ -1,9 +1,8 @@
-import axios from 'axios';
+const axios = require('axios');
 const { v4 } = require('uuid');
 const fs = require('fs');
 const Path = require('path');
-import { BULK_STATUS_QUERY, BULK_INIT_MUTATION } from './muations';
-import { addShop } from '../models/shops';
+import { BULK_STATUS_QUERY, BULK_INIT_MUTATION } from '../db/mutations';
 
 /**
  *
@@ -133,8 +132,41 @@ const downloadJSONL = (jsonlURL) => {
     });
 };
 
+/**
+ * @param {string} ShopOrigin arabycode.myshopify.com
+ * @param {string} token  The access token
+ * @returns {string} returns a string path of the jsonl file containing the data
+ * @description getBulkData: InitBulk + check Status + Download the file;
+ * does so with a series of function calls (above 😉)
+ */
+const getBulkData = (shop, token) => {
+    return new Promise((resolve, reject) => {
+        initBulkRequest(shop, token)
+            .then((operationId) => {
+                bulkStatusQuery(shop, token)
+                    .then((jsonlURL) => {
+                        console.log('Downloading the JSONL url');
+                        downloadJSONL(jsonlURL)
+                            .then((jsonlPath) => {
+                                console.log('\n [+] Stored to: ', jsonlPath);
+                                resolve(jsonlPath);
+                            })
+                            .catch((err) => {
+                                reject('Error, Index(downloadJSONL.catch): ' + err);
+                            });
+                    })
+                    .catch((err) => {
+                        reject('Error, Index(BulkStatusQuery.catch): ' + err);
+                    });
+            })
+            .catch((err) => {
+                reject('Error while InitBulkRequest:105');
+            });
+    }).catch((err) => {
+        console.log('Error on getBulkData.IBSD.catch => :' + err);
+    });
+};
+
 module.exports = {
-    initBulkRequest,
-    bulkStatusQuery,
-    downloadJSONL,
+    getBulkData,
 };
