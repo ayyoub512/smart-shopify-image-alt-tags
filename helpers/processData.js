@@ -2,29 +2,19 @@ const readline = require('readline');
 const fs = require('fs');
 
 /**
- * @param {string} shop is the shopOrigin arabycode.myshopify.com
- * @param {string} token  The access token
- * @param {string} jsonlFilePath  the path to the jsonl file
- * @param {string} templateValue the template value ex: [template_value]
+ * {string} shop is the shopOrigin arabycode.myshopify.com
+ * {string} token  The access token
+ * {string} jsonlFilePath  the path to the jsonl file
+ * {string} templateValue the template value ex: [template_value]
  */
 
-const process = (shop, token, jsonlFilePath, templateValue) => {
-    return new Promise((resolve, reject) => {
-        processFile(jsonlFilePath)
-            .then((resultsArray) => {
-                console.log(resultsArray);
-                console.log('i have the results array');
-                console.log(templateValue);
-                console.log(token);
-                console.log(shop);
-            })
-            .catch((err) => {
-                reject(err);
-            });
-    }).catch((err) => {
-        console.log('processData.js | process.promise.catch : ' + err);
-    });
-};
+// const process = (shop, token, jsonlFilePath, templateValue) => {
+//     return new Promise((resolve, reject) => {
+//         processFile(jsonlFilePath).then((resultsArray) => {
+//             resolve(resultsArray);
+//         });
+//     }).catch();
+// };
 
 const processFile = (jsonlFilePath) => {
     return new Promise((resolve, reject) => {
@@ -91,11 +81,9 @@ const processFile = (jsonlFilePath) => {
             const resultsArray = Object.values(res);
             resolve(resultsArray);
         });
-    }).catch((err) => {
-        console.log('processData.js | processFile.promise.catch : ' + err);
     });
 };
 
 module.exports = {
-    process,
+    processFile,
 };

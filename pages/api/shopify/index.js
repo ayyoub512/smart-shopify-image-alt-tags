@@ -1,9 +1,10 @@
-var jwt = require('jsonwebtoken');
-const shops = require('../../../db/shops');
-const getBulkData = require('../../../helpers/getBulkData');
-const processData = require('../../../helpers/processData.js');
 const Path = require('path');
 const fs = require('fs');
+var jwt = require('jsonwebtoken');
+const shops = require('../../../db/shops');
+
+const getBulkData = require('../../../helpers/getBulkData');
+const processData = require('../../../helpers/processData');
 
 /**
  * @description Gets called when the user submites the tempalate
@@ -36,31 +37,35 @@ export default async function templateForm(req, res) {
                     data.access_token &&
                     decoded.access_token
                 ) {
-                    if (data.shop_origin == decoded.shop_origin && data.access_token == decoded.access_token) {
-                        getBulkData
-                            .getBulkData(decoded.shop_origin, decoded.access_token)
-                            .then((jsonFile) => {
-                                processData
-                                    .process(
-                                        decoded.shop_origin,
-                                        decoded.access_token,
-                                        jsonFile,
-                                        templateValue
-                                    ) /** Proccess the bulk Data here */
-                                    .then((data) => {
-                                        /**
-                                         * too many promises Let's make one last promise
-                                         *
-                                         */
+                    if (data.shop_origin == decoded.shop_origin && data.access_token !== decoded.access_token) {
+                        const shop = data.shop_origin;
+                        const access_token = data.access_token;
 
-                                        resolve();
-                                    })
-                                    .catch((err) => {
-                                        reject('Erro on index:processBulkData.readfile.catch: ' + err);
-                                    });
+                        /***
+                         * this is a greate place to return something back to the user.
+                         * If the request made it here meaning everything thats required from the user has been fulfilled,
+                         * all left is for us to process the request.
+                         *
+                         */
+
+                        res.json({ msg: 'The server has received your rquest and is processing it!', error: false });
+
+                        getBulkData
+                            .initBulkRequest(shop, access_token)
+                            .then(() => {
+                                return getBulkData.bulkStatusQuery(shop, access_token);
+                            })
+                            .then((jsonlURL) => {
+                                return getBulkData.downloadJSONL(jsonlURL);
+                            })
+                            .then((jsonlFilePath) => {
+                                return processData.processFile(jsonlFilePath);
+                            })
+                            .then((resultsArray) => {
+                                resolve();
                             })
                             .catch((err) => {
-                                reject('Error while index.js.getBulkData.catch: ' + err);
+                                console.error('ERROR:' + err);
                             });
                     } else {
                         throw new Error('cookies auth error 1');
@@ -70,11 +75,10 @@ export default async function templateForm(req, res) {
                 }
             })
             .catch((err) => {
-                console.log('FindShop Error: ', err.message);
                 reject('Error while finding and matching shop');
             });
     }).catch((err) => {
-        res.status(401).json({ msg: 'Auth Error, Please re-authenticate!' });
+        res.status(401).json({ msg: 'Bad request, Please re-authenticate!', error: true });
         console.log('> Something went wrong ', err.message ? err.message : err);
     });
 }

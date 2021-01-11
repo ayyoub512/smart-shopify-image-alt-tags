@@ -14,6 +14,7 @@ import { BULK_STATUS_QUERY, BULK_INIT_MUTATION } from '../db/mutations';
 const initBulkRequest = (shop, token) => {
     return new Promise((resolve, reject) => {
         const url = 'https://' + shop + '/admin/api/2021-01/graphql.json';
+
         axios({
             url: url,
             method: 'post',
@@ -34,16 +35,14 @@ const initBulkRequest = (shop, token) => {
                         console.log(item.message);
                     });
                 } else {
-                    console.log('\n[+] Init ID: ', res.data.data.bulkOperationRunQuery.bulkOperation.id);
+                    console.log('\n[+] Init ID: ', res.data.data?.bulkOperationRunQuery?.bulkOperation?.id);
                 }
 
-                resolve();
+                resolve(res);
             })
             .catch((err) => {
-                reject('Error (GetBulkData: initBulkRequest: Axios.catch) : ' + err);
+                reject(err);
             });
-    }).catch((err) => {
-        console.log('Error (GetBulkData: initBulkRequest: Promise.catch) : ', err.message ? err.message : err);
     });
 };
 
@@ -59,9 +58,9 @@ const bulkStatusQuery = (shop, token) => {
         const apiUrl = 'https://' + shop + '/admin/api/2021-01/graphql.json';
 
         // repeat with the interval of 2 seconds
-        try {
-            let timerId = setInterval(() => {
-                console.log(' >> 2 Second Interval Start');
+        let timerId = setInterval(() => {
+            console.log(' - No URL: new interval ');
+            try {
                 axios({
                     url: apiUrl,
                     method: 'post',
@@ -74,27 +73,25 @@ const bulkStatusQuery = (shop, token) => {
                     },
                 })
                     .then((res) => {
-                        const url = res.data.data.currentBulkOperation.url;
+                        const url = res.data?.data?.currentBulkOperation?.url;
 
                         if (url) {
                             clearInterval(timerId);
                             console.log('[+] Found Url & Cleared the Interval');
                             resolve(url);
+                        } else {
+                            console.log(res?.data);
                         }
-                        // else {
-                        //     console.log('\n \n \n [-] Didnt find the url yet, Intervalling again ', url);
-                        // }
                     })
                     .catch((err) => {
-                        console.log('Line 46 inside the bulk query status ' + err);
+                        clearInterval(timerId);
+                        reject(err);
                     });
-            }, 2000);
-        } catch (err) {
-            console.log('Line 50 try catch inside the bulk query status ' + err);
-            reject(err);
-        }
-    }).catch((err) => {
-        console.log('Line 50 try catch inside the bulk query status ' + err);
+            } catch (err) {
+                clearInterval(timerId);
+                reject(err);
+            }
+        }, 2000);
     });
 };
 
@@ -109,7 +106,7 @@ const downloadJSONL = (jsonlURL) => {
         if (!jsonlURL) reject('500 Error, No valid url was passed to the server.');
 
         const fileName = v4() + '.JSONL';
-        const path = Path.resolve(global.appRoot, 'files', fileName);
+        const jsonlFilePath = Path.resolve(global.appRoot, 'files', fileName);
 
         axios({
             method: 'get',
@@ -117,56 +114,20 @@ const downloadJSONL = (jsonlURL) => {
             responseType: 'stream', // important
         })
             .then((response) => {
-                response.data.pipe(fs.createWriteStream(path));
+                response.data.pipe(fs.createWriteStream(jsonlFilePath));
 
                 response.data.on('end', () => {
-                    resolve(path);
+                    resolve(jsonlFilePath);
                 });
             })
             .catch((err) => {
-                console.log(err);
                 reject(err);
             });
-    }).catch((err) => {
-        console.log('Error (GetBulkData: DownloadJSONL: .Promise.Catch): ', err);
-    });
-};
-
-/**
- * @param {string} ShopOrigin arabycode.myshopify.com
- * @param {string} token  The access token
- * @returns {string} returns a string path of the jsonl file containing the data
- * @description getBulkData: InitBulk + check Status + Download the file;
- * does so with a series of function calls (above 😉)
- */
-const getBulkData = (shop, token) => {
-    return new Promise((resolve, reject) => {
-        initBulkRequest(shop, token)
-            .then((operationId) => {
-                bulkStatusQuery(shop, token)
-                    .then((jsonlURL) => {
-                        console.log('Downloading the JSONL url');
-                        downloadJSONL(jsonlURL)
-                            .then((jsonlPath) => {
-                                console.log('\n [+] Stored to: ', jsonlPath);
-                                resolve(jsonlPath);
-                            })
-                            .catch((err) => {
-                                reject('Error, Index(downloadJSONL.catch): ' + err);
-                            });
-                    })
-                    .catch((err) => {
-                        reject('Error, Index(BulkStatusQuery.catch): ' + err);
-                    });
-            })
-            .catch((err) => {
-                reject('Error while InitBulkRequest:105');
-            });
-    }).catch((err) => {
-        console.log('Error on getBulkData.IBSD.catch => :' + err);
     });
 };
 
 module.exports = {
-    getBulkData,
+    downloadJSONL,
+    bulkStatusQuery,
+    initBulkRequest,
 };
