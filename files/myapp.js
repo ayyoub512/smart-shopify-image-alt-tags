@@ -1,68 +1,156 @@
-const readline = require('readline');
-const fs = require('fs');
+const dataArray = [
+    {
+        id: 'gid://shopify/Product/5933007012000',
+        title: 'Not among us',
+        vendor: 'Liam Fashions',
+        productType: 'among us',
+        handle: 'blue-silk-tuxedo',
 
-let res = {};
+        productImages: [
+            {
+                id: 'gid://shopify/ProductImage/20772592091296',
+                originalSrc:
+                    'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/among-us-plush-3.jpg?v=1610404376',
+                __parentId: 'gid://shopify/Product/5933007012000',
+            },
+            {
+                id: 'gid://shopify/ProductImage/21010964021408',
+                originalSrc:
+                    'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/among-us-plush-purple.jpg?v=1610404376',
+                __parentId: 'gid://shopify/Product/5933007012000',
+            },
+        ],
+    },
+    {
+        id: 'gid://shopify/Product/5933007110304',
+        title: 'Among us',
+        vendor: 'Liam Fashions',
+        productType: 'shirts',
+        handle: 'chequered-red-shirt',
 
-function processLine(line) {
-    const myLine = JSON.parse(line);
-    const { id, __parentId, title, featuredImage, options, vendor, productType, handle } = myLine;
+        productImages: [
+            {
+                id: 'gid://shopify/ProductImage/21048338546848',
+                originalSrc:
+                    'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/ezgif.com-gif-maker.jpg?v=1610461385',
+                __parentId: 'gid://shopify/Product/5933007110304',
+            },
+            {
+                id: 'gid://shopify/ProductImage/21048338677920',
+                originalSrc:
+                    'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/among-us-plush-3_6c3d121b-3c24-46f9-8eba-1c38f593ec7e.jpg?v=1610461385',
+                __parentId: 'gid://shopify/Product/5933007110304',
+            },
+            {
+                id: 'gid://shopify/ProductImage/21048338612384',
+                originalSrc:
+                    'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/among-us-plush-4.jpg?v=1610461385',
+                __parentId: 'gid://shopify/Product/5933007110304',
+            },
+            {
+                id: 'gid://shopify/ProductImage/21048406540448',
+                originalSrc: 'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/hmm2.jpg?v=1610461385',
+                __parentId: 'gid://shopify/Product/5933007110304',
+            },
+            {
+                id: 'gid://shopify/ProductImage/21048426365088',
+                originalSrc: 'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/hmm1.jpg?v=1610461468',
+                __parentId: 'gid://shopify/Product/5933007110304',
+            },
+            {
+                id: 'gid://shopify/ProductImage/21048427905184',
+                originalSrc: 'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/hmm3.jpg?v=1610461474',
+                __parentId: 'gid://shopify/Product/5933007110304',
+            },
+        ],
+    },
+    {
+        id: 'gid://shopify/Product/5933007536288',
+        title: 'Classic Leather Jacket',
+        vendor: 'Liam Fashions',
+        productType: '',
+        handle: 'classic-leather-jacket',
+        productImages: [
+            {
+                id: 'gid://shopify/ProductImage/20771196141728',
+                originalSrc:
+                    'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/leather-jacket-and-tea_925x_e917107c-d13e-4260-91a6-0ed33f12e7e1.jpg?v=1608301937',
+                __parentId: 'gid://shopify/Product/5933007536288',
+            },
+            {
+                id: 'gid://shopify/ProductImage/21051097809056',
+                originalSrc:
+                    'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/hmm1_29106cc3-b794-46a9-a86c-cbbc3661d516.jpg?v=1610472514',
+                __parentId: 'gid://shopify/Product/5933007536288',
+            },
+            {
+                id: 'gid://shopify/ProductImage/21051098693792',
+                originalSrc:
+                    'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/among-us-plush-3_4ebf85c3-7ce0-41ca-b7da-2c722f624ac6.jpg?v=1610472515',
+                __parentId: 'gid://shopify/Product/5933007536288',
+            },
+            {
+                id: 'gid://shopify/ProductImage/21051098562720',
+                originalSrc:
+                    'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/among-us-plush-4_7c757bc2-a9fe-4fd2-ab32-ecf8c33b0646.jpg?v=1610472515',
+                __parentId: 'gid://shopify/Product/5933007536288',
+            },
+        ],
+    },
+    {
+        id: 'gid://shopify/Product/5933007765664',
+        title: 'Classic Varsity Top',
+        vendor: 'Liam Fashions',
+        productType: '',
+        handle: 'classic-varsity-top',
 
-    // if there is no `__parentId`, this is a parent
-    if (typeof __parentId === 'undefined') {
-        res[id] = {
-            id,
-            title,
-            vendor,
-            productType,
-            handle,
-            featuredImage: featuredImage ?? {},
-            options: options ?? [],
-            productVariants: [],
-            productImages: [],
-        };
+        productImages: [
+            {
+                id: 'gid://shopify/ProductImage/20771197059232',
+                originalSrc:
+                    'https://cdn.shopify.com/s/files/1/0521/6046/3008/products/casual-fashion-woman_925x_400a5af0-2457-49d9-9ef2-029a9850d738.jpg?v=1608301947',
+                __parentId: 'gid://shopify/Product/5933007765664',
+            },
+        ],
+    },
+];
 
-        return res;
-    }
+let templateValue = '[product_title] [product_vendor] [shop_name] `+${fii}+` ';
+const shopName = 'ArabyCode';
 
-    // this is a child, create its parent if necessary
-    if (res[__parentId] === 'undefined') {
-        res[__parentId] = {
-            id: __parentId,
-            title,
-            vendor,
-            productType,
-            handle,
-            featuredImage: featuredImage ?? {},
-            options: options ?? [],
-            productVariants: [],
-            productImages: [],
-        };
-    }
+const res = dataArray.map((product, index) => {
+    let template = templateValue.replace(/\[shop_name\]/gi, shopName);
+    template = template.replace(/\[product_title\]/gi, product.title);
+    template = template.replace(/\[product_vendor\]/g, product.vendor);
+    template = template.replace(/\[product_type\]/gi, product.productType);
+    template = template.replace(/\[product_handle\]/gi, product.handle);
 
-    /**
-     * DOWN HERE WE MUST HAVE {id: "xx", childrens: []}
-     * so now lets check if its a product image || variant
-     *  // res[__parentId].childrens.push(myLine);
-     */
+    template = template.substring(0, 490);
 
-    if (id.includes('ProductVariant')) {
-        res[__parentId].productVariants.push(myLine);
-    } else {
-        // It must be productImage then
-        res[__parentId].productImages.push(myLine);
-    }
-    return res;
-}
+    return (
+        `
+        mutation${index}: productUpdate(input: {
+            id: "${product.id}", 
+            images: [
+                ` +
+        product.productImages.map((img) => {
+            return `{id: "${img.id}", altText: "${template}"}`;
+        }) +
+        `
+            ]
+        }) {
+            userErrors {
+            field
+            message
+            }
+        }
+    `
+    );
 
-const readInterface = readline.createInterface({
-    input: fs.createReadStream('data.jsonl'),
-    // output: process.stdout,
-    console: false,
+    +`
+
+    `;
 });
 
-readInterface.on('line', processLine);
-
-readInterface.on('close', function () {
-    const resultArray = Object.values(res);
-    console.log(resultArray.length);
-});
+// console.table(query);
+console.log(res.toString());

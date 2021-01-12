@@ -33,6 +33,7 @@ global.appRoot = path.resolve(__dirname);
 /**
  * Connecting to the database
  * */
+const shopModel = require('./db/shops');
 
 var dbConn = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -74,7 +75,6 @@ app.prepare().then(() => {
             async afterAuth(ctx) {
                 const { shop, accessToken } = ctx.session;
 
-                const shopModel = require('./models/shops');
                 shopModel.addShop(shop, accessToken);
 
                 console.log('> Authenticated+Saved : ' + shop + ' -token- ' + accessToken);

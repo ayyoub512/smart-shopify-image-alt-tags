@@ -15,6 +15,7 @@ const initBulkRequest = (shop, token) => {
     return new Promise((resolve, reject) => {
         const url = 'https://' + shop + '/admin/api/2021-01/graphql.json';
 
+        console.log(shop, token);
         axios({
             url: url,
             method: 'post',
@@ -41,6 +42,8 @@ const initBulkRequest = (shop, token) => {
                 resolve(res);
             })
             .catch((err) => {
+                console.log('ERROR');
+                console.log(err);
                 reject(err);
             });
     });

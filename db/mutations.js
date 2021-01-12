@@ -1,5 +1,3 @@
-//import { gql } from '@apollo/client';
-
 export const BULK_INIT_MUTATION = `
     mutation {
       bulkOperationRunQuery(

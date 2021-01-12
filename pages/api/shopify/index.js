@@ -21,6 +21,7 @@ export default async function templateForm(req, res) {
         const templateValue = req.body.templateValue;
 
         if (!undecodedToken || !shopOrigin || !templateValue) {
+            console.log('No Token');
             throw new Error('No token, authorization denied.');
         }
 
@@ -37,9 +38,10 @@ export default async function templateForm(req, res) {
                     data.access_token &&
                     decoded.access_token
                 ) {
-                    if (data.shop_origin == decoded.shop_origin && data.access_token !== decoded.access_token) {
+                    if (data.shop_origin == decoded.shop_origin && data.access_token == decoded.access_token) {
                         const shop = data.shop_origin;
                         const access_token = data.access_token;
+                        const shopName = data.shop_name;
 
                         /***
                          * this is a greate place to return something back to the user.
@@ -49,7 +51,6 @@ export default async function templateForm(req, res) {
                          */
 
                         res.json({ msg: 'The server has received your rquest and is processing it!', error: false });
-
                         getBulkData
                             .initBulkRequest(shop, access_token)
                             .then(() => {
@@ -62,23 +63,34 @@ export default async function templateForm(req, res) {
                                 return processData.processFile(jsonlFilePath);
                             })
                             .then((resultsArray) => {
-                                resolve();
+                                return processData.processResultsArray(
+                                    shop,
+                                    access_token,
+                                    resultsArray,
+                                    templateValue,
+                                    shopName
+                                );
+                            })
+                            .then((mutationDone) => {
+                                if (mutationDone) console.log('Mutation Done') && resolve();
+                                else console.log('Mutation not done') && reject('Something went wrong while mutation');
                             })
                             .catch((err) => {
                                 console.error('ERROR:' + err);
                             });
                     } else {
-                        throw new Error('cookies auth error 1');
+                        throw new Error('Autorisation not permitted');
                     }
                 } else {
-                    throw new Error('Cookie auth error 2');
+                    throw new Error('Autorisation not permitted');
                 }
             })
             .catch((err) => {
-                reject('Error while finding and matching shop');
+                reject(err);
             });
     }).catch((err) => {
-        res.status(401).json({ msg: 'Bad request, Please re-authenticate!', error: true });
         console.log('> Something went wrong ', err.message ? err.message : err);
+
+        res.status(401).json({ msg: 'Bad request, Please re-authenticate!', error: true });
     });
 }
