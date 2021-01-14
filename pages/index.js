@@ -1,30 +1,30 @@
-import React from 'react';
-import axios from 'axios';
+import React from "react";
+import axios from "axios";
 
-import AltTextForm from '../components/AltTextForm';
-import { findShopByName, updateFields } from '../db/shops';
-import { GET_IMGS_QUERY } from '../db/queries';
-import ErrorsHandler from '../components/ErrorsHandler';
-import { parseCookies } from '../helpers/parseCookies';
-import { randomNumber } from '../helpers/randomNum';
+import { findShopByName, updateFields, setStatus } from "../db/shops";
+import { randomNumber } from "../helpers/randomNum";
 
-const img = 'https://cdn.shopify.com/s/files/1/0757/9955/files/empty-state.svg';
+import { GET_IMGS_QUERY } from "../db/queries";
+import AltTextForm from "../components/AltTextForm";
+import ErrorsHandler from "../components/ErrorsHandler";
+import Working from "../components/Working";
 
 class Index extends React.Component {
     constructor(props) {
         super(props);
 
-        // const product = props.products
-
         this.state = {
             product: props.product,
+            status: props.status,
             shopName: props.shopName,
             isError: props.isError,
         };
     }
 
     render() {
-        if (!this.state.isError) return <AltTextForm product={this.state.product} shopName={this.state.shopName} />;
+        if (!this.state.isError && this.state.status == 0)
+            return <AltTextForm product={this.state.product} shopName={this.state.shopName} />;
+        else if (this.state.status == 2) return <Working />;
         else return <ErrorsHandler />;
     }
 }
@@ -36,33 +36,36 @@ class Index extends React.Component {
  * 3 - Get 1 product and send it to component as a prop from the last intered 10.
  */
 export async function getServerSideProps(ctx) {
-    const cookies = parseCookies(ctx.req); // Getting the  shopOrigin cookie
-
-    const shop = cookies.shopOrigin;
+    const shop = ctx.query.shop;
     let product; // gets retreived from the db later
     let shopName; // gets retreived from the db later
     let isError = false;
+    let templateValue;
+    let status = 0; // by default status = 0, first time.
 
-    if (!shop) {
-        isError = true;
-    } else {
-        try {
-            /**
-             * @fsd means findShopData
-             */
-            const findShopData = await findShopByName(shop);
-            const fsd_email = findShopData.email;
-            const fsd_contactEmail = findShopData.contactEmail;
+    try {
+        if (!shop) throw new Error("Something went wrong");
 
-            const url = 'https://' + shop + '/admin/api/2021-01/graphql.json';
-            const accessToken = findShopData.access_token.toString();
+        /**
+         * @fsd means findShopData
+         */
+        const findShopData = await findShopByName(shop);
+        const fsd_email = findShopData.email;
+        const fsd_contactEmail = findShopData.contactEmail;
+        const accessToken = findShopData.access_token;
+        status = findShopData.status;
+        templateValue = findShopData.template_value;
+
+        /// When status code = 0, means first time
+        if (status == 0) {
+            const url = "https://" + shop + "/admin/api/2021-01/graphql.json";
 
             const result = await axios({
                 url: url,
-                method: 'post',
+                method: "post",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-Shopify-Access-Token': accessToken,
+                    "Content-Type": "application/json",
+                    "X-Shopify-Access-Token": accessToken,
                 },
                 data: {
                     query: GET_IMGS_QUERY,
@@ -103,16 +106,18 @@ export async function getServerSideProps(ctx) {
                     product = products[index];
                 }
             }
-        } catch (err) {
-            console.log(err);
-            isError = true;
-        }
+        } // end of if status == 0
+    } catch (err) {
+        console.log(err);
+        isError = true;
     }
 
     return {
         props: {
-            product: {},
-            shopName: '',
+            product: product ?? {},
+            shopName: "",
+            templateValue,
+            status,
             isError,
         },
     };

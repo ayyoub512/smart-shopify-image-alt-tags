@@ -1,16 +1,16 @@
-require('isomorphic-fetch');
-const dotenv = require('dotenv');
-const Koa = require('koa');
-const next = require('next');
-const { default: createShopifyAuth } = require('@shopify/koa-shopify-auth');
-const { verifyRequest } = require('@shopify/koa-shopify-auth');
-const session = require('koa-session');
+require("isomorphic-fetch");
+const dotenv = require("dotenv");
+const Koa = require("koa");
+const next = require("next");
+const { default: createShopifyAuth } = require("@shopify/koa-shopify-auth");
+const { verifyRequest } = require("@shopify/koa-shopify-auth");
+const session = require("koa-session");
 
-const path = require('path');
+const path = require("path");
 
-const mysql = require('mysql');
+const mysql = require("mysql");
 
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
 /***
  * the end of
@@ -18,11 +18,11 @@ const jwt = require('jsonwebtoken');
  */
 
 dotenv.config();
-const { default: graphQLProxy } = require('@shopify/koa-shopify-graphql-proxy');
-const { ApiVersion } = require('@shopify/koa-shopify-graphql-proxy');
+const { default: graphQLProxy } = require("@shopify/koa-shopify-graphql-proxy");
+const { ApiVersion } = require("@shopify/koa-shopify-graphql-proxy");
 
 const port = parseInt(process.env.PORT, 10) || 3000;
-const dev = process.env.NODE_ENV !== 'production';
+const dev = process.env.NODE_ENV !== "production";
 
 const app = next({ dev });
 const handle = app.getRequestHandler();
@@ -33,7 +33,7 @@ global.appRoot = path.resolve(__dirname);
 /**
  * Connecting to the database
  * */
-const shopModel = require('./db/shops');
+const shopModel = require("./db/shops");
 
 var dbConn = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -44,7 +44,7 @@ var dbConn = mysql.createConnection({
 
 dbConn.connect(function (err) {
     if (err) throw err;
-    console.log('> Connected to mysql server');
+    console.log("> Connected to mysql server");
 });
 global.db = dbConn;
 
@@ -63,37 +63,37 @@ app.prepare().then(() => {
      * You may add additional properties to ctx by editing app.context.
      */
 
-    server.use(session({ secure: true, sameSite: 'none' }, server));
+    server.use(session({ secure: true, sameSite: "none" }, server));
     server.keys = [SHOPIFY_API_SECRET_KEY];
 
     server.use(
         createShopifyAuth({
             apiKey: SHOPIFY_API_KEY,
             secret: SHOPIFY_API_SECRET_KEY,
-            scopes: ['read_products', 'write_products', 'read_assigned_fulfillment_orders'],
+            scopes: ["read_products", "write_products", "read_assigned_fulfillment_orders"],
 
             async afterAuth(ctx) {
                 const { shop, accessToken } = ctx.session;
 
                 shopModel.addShop(shop, accessToken);
 
-                console.log('> Authenticated+Saved : ' + shop + ' -token- ' + accessToken);
+                // console.log("> Authenticated+Saved : " + shop + " -token- " + accessToken);
 
                 /***
                  * JWT
                  */
                 const token = jwt.sign({ shop_origin: shop, access_token: accessToken }, process.env.JWT_SECRET);
-                ctx.cookies.set('x-auth-token', token, {
+                ctx.cookies.set("alt-text-app", token, {
                     httpOnly: true,
                     secure: true,
-                    sameSite: 'none',
+                    sameSite: "none",
                 });
 
-                ctx.cookies.set('shopOrigin', shop, {
-                    httpOnly: false,
-                    secure: true,
-                    sameSite: 'none',
-                });
+                // ctx.cookies.set("shopOrigin", shop, {
+                //     httpOnly: false,
+                //     secure: true,
+                //     sameSite: "none",
+                // });
 
                 ctx.redirect(`/?shop=${shop}`);
             },

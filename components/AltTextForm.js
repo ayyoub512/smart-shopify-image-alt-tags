@@ -1,22 +1,8 @@
-import React, { useState, useCallback } from 'react';
-import axios from 'axios';
-import {
-    TextField,
-    SkeletonPage,
-    SkeletonDisplayText,
-    SkeletonBodyText,
-    Banner,
-    Card,
-    Stack,
-    Page,
-    Layout,
-    Tag,
-    TextContainer,
-    TextStyle,
-    Subheading,
-} from '@shopify/polaris';
+import React, { useState, useCallback } from "react";
+import axios from "axios";
+import { TextField, Card, Stack, Page, Layout, Tag, TextContainer, TextStyle, Subheading } from "@shopify/polaris";
 
-import LoadingComponent from './LoadingComponent';
+import LoadingComponent from "./LoadingComponent";
 
 /**
  * The Template Form
@@ -25,7 +11,7 @@ class AltTextForm extends React.Component {
     constructor(props) {
         super(props);
 
-        const shopName = props.shopName ?? '[shop_name]';
+        const shopName = props.shopName ?? "[shop_name]";
         const imgSrc = props.product?.node?.featuredImage?.originalSrc;
         const handle = props.product?.node?.handle;
         const productType = props.product?.node?.productType;
@@ -33,7 +19,7 @@ class AltTextForm extends React.Component {
         const vendor = props.product?.node?.vendor;
 
         this.state = {
-            value: '[product_title] [variant_title]  - ' + shopName, // template value
+            value: "[product_title] [product_type]  - " + shopName, // template value
             imgSrc,
             handle,
             productType,
@@ -48,27 +34,27 @@ class AltTextForm extends React.Component {
     }
 
     render() {
-        // if (this.state.isLoading) return <LoadingComponent />;
+        if (this.state.isLoading) return <LoadingComponent />;
 
         return (
-            <Page title='Settings'>
-                {this.state.isLoading && <LoadingComponent />}
+            <Page title='Alt Value Setup'>
+                {/* {this.state.isLoading && <LoadingComponent />} */}
                 <Layout>
                     <Layout.Section oneHalf>
                         <Card sectioned>
                             <img
                                 src={
                                     this.state.imgSrc ??
-                                    'https://cdn.shopify.com/s/files/1/0757/9955/files/empty-state.svg'
+                                    "https://cdn.shopify.com/s/files/1/0757/9955/files/empty-state.svg"
                                 }
-                                style={{ maxWidth: '100%', maxHeight: '100%' }}
+                                style={{ maxWidth: "100%", maxHeight: "100%" }}
                             />
                         </Card>
                     </Layout.Section>
                     <Layout.Section oneHalf>
                         <Card
                             title='Set an image alt text template'
-                            primaryFooterAction={{ content: 'Optimize Now', onAction: this.handleSubmit }}
+                            primaryFooterAction={{ content: "Optimize Now", onAction: this.handleSubmit }}
                         >
                             <Card.Section>
                                 <TextField
@@ -77,7 +63,7 @@ class AltTextForm extends React.Component {
                                     onChange={this.handleChange}
                                     placeholder='Alt text value'
                                     clearButton
-                                    onClearButtonClick={() => this.setState({ value: '' })}
+                                    onClearButtonClick={() => this.setState({ value: "" })}
                                 />
                             </Card.Section>
                             <Card.Section subdued>
@@ -90,8 +76,8 @@ class AltTextForm extends React.Component {
                                                 let newValue = this.state.value.trim();
 
                                                 newValue
-                                                    ? (newValue += ' [product_title] ')
-                                                    : (newValue = '[product_title] ');
+                                                    ? (newValue += " [product_title] ")
+                                                    : (newValue = "[product_title] ");
 
                                                 this.setState({
                                                     value: newValue,
@@ -105,16 +91,14 @@ class AltTextForm extends React.Component {
                                             onClick={(e) => {
                                                 let newValue = this.state.value.trim();
 
-                                                newValue
-                                                    ? (newValue += ' [variant_title] ')
-                                                    : (newValue = '[variant_title] ');
+                                                newValue ? (newValue += " [shop_name] ") : (newValue = "[shop_name] ");
 
                                                 this.setState({
                                                     value: newValue,
                                                 });
                                             }}
                                         >
-                                            [variant_title]
+                                            [shop_name]
                                         </Tag>
 
                                         <Tag
@@ -122,24 +106,8 @@ class AltTextForm extends React.Component {
                                                 let newValue = this.state.value.trim();
 
                                                 newValue
-                                                    ? (newValue += ' [product_handle] ')
-                                                    : (newValue = '[product_handle] ');
-
-                                                this.setState({
-                                                    value: newValue,
-                                                });
-                                            }}
-                                        >
-                                            [product_handle]
-                                        </Tag>
-
-                                        <Tag
-                                            onClick={(e) => {
-                                                let newValue = this.state.value.trim();
-
-                                                newValue
-                                                    ? (newValue += ' [product_vendor] ')
-                                                    : (newValue = '[product_vendor] ');
+                                                    ? (newValue += " [product_vendor] ")
+                                                    : (newValue = "[product_vendor] ");
 
                                                 this.setState({
                                                     value: newValue,
@@ -154,8 +122,8 @@ class AltTextForm extends React.Component {
                                                 let newValue = this.state.value.trim();
 
                                                 newValue
-                                                    ? (newValue += ' [product_type] ')
-                                                    : (newValue = '[product_type] ');
+                                                    ? (newValue += " [product_type] ")
+                                                    : (newValue = "[product_type] ");
 
                                                 this.setState({
                                                     value: newValue,
@@ -169,14 +137,16 @@ class AltTextForm extends React.Component {
                                             onClick={(e) => {
                                                 let newValue = this.state.value.trim();
 
-                                                newValue ? (newValue += ' [shop_name] ') : (newValue = '[shop_name] ');
+                                                newValue
+                                                    ? (newValue += " [product_handle] ")
+                                                    : (newValue = "[product_handle] ");
 
                                                 this.setState({
                                                     value: newValue,
                                                 });
                                             }}
                                         >
-                                            [shop_name]
+                                            [product_handle]
                                         </Tag>
                                     </Stack>
                                 </TextContainer>
@@ -213,7 +183,7 @@ class AltTextForm extends React.Component {
         const templateValue = this.state.value.trim();
         if (templateValue.length > 0) {
             axios
-                .post('/api/shopify/', {
+                .post("/api/shopify/", {
                     templateValue,
                 })
                 .then(

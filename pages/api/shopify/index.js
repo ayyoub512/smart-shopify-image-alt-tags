@@ -1,10 +1,8 @@
-const Path = require('path');
-const fs = require('fs');
-var jwt = require('jsonwebtoken');
-const shops = require('../../../db/shops');
+var jwt = require("jsonwebtoken");
+const shops = require("../../../db/shops");
 
-const getBulkData = require('../../../helpers/getBulkData');
-const processData = require('../../../helpers/processData');
+const getBulkData = require("../../../helpers/getBulkData");
+const processData = require("../../../helpers/processData");
 
 /**
  * @description Gets called when the user submites the tempalate
@@ -16,81 +14,75 @@ export default async function templateForm(req, res) {
          * Verify token and see if the current store on the cookies is the real store
          * we have on the databse
          */
-        const undecodedToken = req.cookies['x-auth-token'];
-        const shopOrigin = req.cookies['shopOrigin'];
+        const undecodedToken = req.cookies["alt-text-app"];
         const templateValue = req.body.templateValue;
 
-        if (!undecodedToken || !shopOrigin || !templateValue) {
-            console.log('No Token');
-            throw new Error('No token, authorization denied.');
+        if (!undecodedToken || !templateValue) {
+            console.log("400 Bad Request");
+            throw new Error("400 Bad Request");
         }
 
-        const decoded = jwt.verify(undecodedToken, process.env.JWT_SECRET);
+        let decoded;
+        try {
+            decoded = jwt.verify(undecodedToken, process.env.JWT_SECRET);
+        } catch (err) {
+            throw new Error("401 Authorisation denied!");
+        }
+
+        const shop = decoded.shop_origin;
+        const accessToken = decoded.access_token;
+        let shopName;
 
         shops
-            .findShopByName(shopOrigin)
+            .findShopByName(shop)
             .then((data) => {
                 if (
-                    data &&
-                    decoded &&
                     data.shop_origin &&
-                    decoded.shop_origin &&
                     data.access_token &&
-                    decoded.access_token
+                    data.shop_origin == shop &&
+                    data.access_token == accessToken
                 ) {
-                    if (data.shop_origin == decoded.shop_origin && data.access_token == decoded.access_token) {
-                        const shop = data.shop_origin;
-                        const access_token = data.access_token;
-                        const shopName = data.shop_name;
+                    /***
+                     * this is a greate place to return something back to the user.
+                     * If the request made it here meaning everything thats required from the user has been fulfilled,
+                     * all left is for us to process the request.
+                     */
+                    shopName = data.shop_name;
+                    res.json({ msg: "The server has received your rquest and is processing it!", error: false });
 
-                        /***
-                         * this is a greate place to return something back to the user.
-                         * If the request made it here meaning everything thats required from the user has been fulfilled,
-                         * all left is for us to process the request.
-                         *
-                         */
-
-                        res.json({ msg: 'The server has received your rquest and is processing it!', error: false });
-                        getBulkData
-                            .initBulkRequest(shop, access_token)
-                            .then(() => {
-                                return getBulkData.bulkStatusQuery(shop, access_token);
-                            })
-                            .then((jsonlURL) => {
-                                return getBulkData.downloadJSONL(jsonlURL);
-                            })
-                            .then((jsonlFilePath) => {
-                                return processData.processFile(jsonlFilePath);
-                            })
-                            .then((resultsArray) => {
-                                return processData.processResultsArray(
-                                    shop,
-                                    access_token,
-                                    resultsArray,
-                                    templateValue,
-                                    shopName
-                                );
-                            })
-                            .then((mutationDone) => {
-                                if (mutationDone) console.log('Mutation Done') && resolve();
-                                else console.log('Mutation not done') && reject('Something went wrong while mutation');
-                            })
-                            .catch((err) => {
-                                console.error('ERROR:' + err);
-                            });
-                    } else {
-                        throw new Error('Autorisation not permitted');
-                    }
+                    return getBulkData.initBulkRequest(shop, accessToken);
                 } else {
-                    throw new Error('Autorisation not permitted');
+                    throw new Error("Autorisation not permitted");
                 }
             })
+
+            .then((initBulkRequestResponse) => {
+                return getBulkData.bulkStatusQuery(shop, accessToken);
+            })
+
+            .then((jsonlURL) => {
+                return getBulkData.downloadJSONL(jsonlURL);
+            })
+
+            .then((jsonlFilePath) => {
+                return processData.processFile(jsonlFilePath);
+            })
+
+            .then((resultsArray) => {
+                return processData.processResultsArray(shop, accessToken, resultsArray, templateValue, shopName);
+            })
+
+            .then((mutationDone) => {
+                if (mutationDone) console.log("Mutation Done") && resolve();
+                else console.log("Mutation not done") && reject("Something went wrong while mutation");
+            })
+
             .catch((err) => {
                 reject(err);
             });
     }).catch((err) => {
-        console.log('> Something went wrong ', err.message ? err.message : err);
+        console.log("> Something went wrong ", err.message ? err.message : err);
 
-        res.status(401).json({ msg: 'Bad request, Please re-authenticate!', error: true });
+        res.status(401).json({ msg: "Bad request, Please re-authenticate!", error: true });
     });
 }

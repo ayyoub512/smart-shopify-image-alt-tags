@@ -1,19 +1,18 @@
-import React from 'react';
-import App from 'next/app';
-import Head from 'next/head';
-import { AppProvider } from '@shopify/polaris';
-import { Provider } from '@shopify/app-bridge-react';
-import '@shopify/polaris/dist/styles.css';
-import Cookies from 'js-cookie';
-import translations from '@shopify/polaris/locales/en.json';
-import ClientRouter from '../components/ClientRouter';
-import { ApolloClient, ApolloProvider, InMemoryCache, createHttpLink } from '@apollo/client';
+import React from "react";
+import App from "next/app";
+import Head from "next/head";
+import { AppProvider } from "@shopify/polaris";
+import { Provider } from "@shopify/app-bridge-react";
+import "@shopify/polaris/dist/styles.css";
+import translations from "@shopify/polaris/locales/en.json";
+import ClientRouter from "../components/ClientRouter";
+import { ApolloClient, ApolloProvider, InMemoryCache, createHttpLink } from "@apollo/client";
 
 const client = new ApolloClient({
     link: new createHttpLink({
-        credentials: 'include',
+        credentials: "include",
         headers: {
-            'Content-Type': 'application/graphql',
+            "Content-Type": "application/graphql",
         },
     }),
     cache: new InMemoryCache(),
@@ -23,17 +22,12 @@ class MyApp extends App {
     state = {};
 
     render() {
-        const { Component, pageProps } = this.props;
-        // console.log('this.props');
-        // console.log(this.props);
-
-        // console.log('this.component');
-        // console.log(Component);
+        const { Component, pageProps, shopOrigin } = this.props;
 
         const config = {
             apiKey: API_KEY, // has to do with next.config.js I think because I have setup that variable there as well
-            shopOrigin: Cookies.get('shopOrigin'),
-            forceRedirect: false,
+            shopOrigin,
+            forceRedirect: true,
         };
 
         return (

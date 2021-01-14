@@ -1,8 +1,8 @@
-const axios = require('axios');
-const { v4 } = require('uuid');
-const fs = require('fs');
-const Path = require('path');
-import { BULK_STATUS_QUERY, BULK_INIT_MUTATION } from '../db/mutations';
+const axios = require("axios");
+const { v4 } = require("uuid");
+const fs = require("fs");
+const Path = require("path");
+const { BULK_STATUS_QUERY, BULK_INIT_MUTATION } = require("../db/mutations");
 
 /**
  *
@@ -13,15 +13,15 @@ import { BULK_STATUS_QUERY, BULK_INIT_MUTATION } from '../db/mutations';
  */
 const initBulkRequest = (shop, token) => {
     return new Promise((resolve, reject) => {
-        const url = 'https://' + shop + '/admin/api/2021-01/graphql.json';
+        const url = "https://" + shop + "/admin/api/2021-01/graphql.json";
 
         console.log(shop, token);
         axios({
             url: url,
-            method: 'post',
+            method: "post",
             headers: {
-                'Content-Type': 'application/json',
-                'X-Shopify-Access-Token': token,
+                "Content-Type": "application/json",
+                "X-Shopify-Access-Token": token,
             },
             data: {
                 query: BULK_INIT_MUTATION,
@@ -36,13 +36,13 @@ const initBulkRequest = (shop, token) => {
                         console.log(item.message);
                     });
                 } else {
-                    console.log('\n[+] Init ID: ', res.data.data?.bulkOperationRunQuery?.bulkOperation?.id);
+                    console.log("\n[+] Init ID: ", res.data.data?.bulkOperationRunQuery?.bulkOperation?.id);
                 }
 
                 resolve(res);
             })
             .catch((err) => {
-                console.log('ERROR');
+                console.log("ERROR");
                 console.log(err);
                 reject(err);
             });
@@ -58,18 +58,18 @@ const initBulkRequest = (shop, token) => {
  */
 const bulkStatusQuery = (shop, token) => {
     return new Promise((resolve, reject) => {
-        const apiUrl = 'https://' + shop + '/admin/api/2021-01/graphql.json';
+        const apiUrl = "https://" + shop + "/admin/api/2021-01/graphql.json";
 
         // repeat with the interval of 2 seconds
         let timerId = setInterval(() => {
-            console.log(' - No URL: new interval ');
+            console.log(" - No URL: new interval ");
             try {
                 axios({
                     url: apiUrl,
-                    method: 'post',
+                    method: "post",
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-Shopify-Access-Token': token,
+                        "Content-Type": "application/json",
+                        "X-Shopify-Access-Token": token,
                     },
                     data: {
                         query: BULK_STATUS_QUERY,
@@ -80,7 +80,7 @@ const bulkStatusQuery = (shop, token) => {
 
                         if (url) {
                             clearInterval(timerId);
-                            console.log('[+] Found Url & Cleared the Interval');
+                            console.log("[+] Found Url & Cleared the Interval");
                             resolve(url);
                         } else {
                             console.log(res?.data);
@@ -106,20 +106,20 @@ const bulkStatusQuery = (shop, token) => {
  */
 const downloadJSONL = (jsonlURL) => {
     return new Promise((resolve, reject) => {
-        if (!jsonlURL) reject('500 Error, No valid url was passed to the server.');
+        if (!jsonlURL) reject("500 Error, No valid url was passed to the server.");
 
-        const fileName = v4() + '.JSONL';
-        const jsonlFilePath = Path.resolve(global.appRoot, 'files', fileName);
+        const fileName = v4() + ".JSONL";
+        const jsonlFilePath = Path.resolve(global.appRoot, "files", fileName);
 
         axios({
-            method: 'get',
+            method: "get",
             url: jsonlURL,
-            responseType: 'stream', // important
+            responseType: "stream", // important
         })
             .then((response) => {
                 response.data.pipe(fs.createWriteStream(jsonlFilePath));
 
-                response.data.on('end', () => {
+                response.data.on("end", () => {
                     resolve(jsonlFilePath);
                 });
             })
