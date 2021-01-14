@@ -1,7 +1,7 @@
 import React from "react";
 import axios from "axios";
 
-import { findShopByName, updateFields, setStatus } from "../db/shops";
+import shops from "../db/shops";
 import { randomNumber } from "../helpers/randomNum";
 
 import { GET_IMGS_QUERY } from "../db/queries";
@@ -49,12 +49,12 @@ export async function getServerSideProps(ctx) {
         /**
          * @fsd means findShopData
          */
-        const findShopData = await findShopByName(shop);
+        const findShopData = await shops.findShopByName(shop);
         const fsd_email = findShopData.email;
         const fsd_contactEmail = findShopData.contactEmail;
         const accessToken = findShopData.access_token;
         status = findShopData.status;
-        templateValue = findShopData.template_value;
+        templateValue = shops.findShopData.template_value;
 
         /// When status code = 0, means first time
         if (status == 0) {
@@ -84,7 +84,7 @@ export async function getServerSideProps(ctx) {
 
                 /** INSERTING/UPDATING THE EMAIL ADDRESSES, contactEmail: is the support email */
                 if (email !== fsd_email || contactEmail !== fsd_contactEmail)
-                    await updateFields(shop, email, contactEmail, shopName);
+                    await shops.updateFields(shop, email, contactEmail, shopName);
 
                 const products = nodes.map((product) => {
                     const title = product.node.title.toString();
