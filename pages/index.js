@@ -54,7 +54,7 @@ export async function getServerSideProps(ctx) {
         const fsd_contactEmail = findShopData.contactEmail;
         const accessToken = findShopData.access_token;
         status = findShopData.status;
-        templateValue = shops.findShopData.template_value;
+        templateValue = findShopData.template_value;
 
         /// When status code = 0, means first time
         if (status == 0) {
@@ -116,7 +116,7 @@ export async function getServerSideProps(ctx) {
         props: {
             product: product ?? {},
             shopName: "",
-            templateValue,
+            templateValue: templateValue ?? null,
             status,
             isError,
         },

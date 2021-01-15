@@ -61,7 +61,11 @@ const bulkStatusQuery = (shop, token) => {
         const apiUrl = "https://" + shop + "/admin/api/2021-01/graphql.json";
 
         // repeat with the interval of 2 seconds
-        let timerId = setInterval(() => {
+        let index = 0;
+        let waitTime = 2000;
+
+        function getUrl() {
+            index++;
             console.log(" - No URL: new interval ");
             try {
                 axios({
@@ -78,23 +82,44 @@ const bulkStatusQuery = (shop, token) => {
                     .then((res) => {
                         const url = res.data?.data?.currentBulkOperation?.url;
 
-                        if (url) {
-                            clearInterval(timerId);
-                            console.log("[+] Found Url & Cleared the Interval");
-                            resolve(url);
-                        } else {
-                            console.log(res?.data);
+                        if (url) resolve(url);
+                        else {
+                            console.log(res?.data?.status);
+                            index === 2 ? (waitTime = 4000) : null;
+                            index === 4 ? (waitTime = 8000) : null;
+                            index === 8 ? (waitTime = 12000) : null;
+                            index === 10 ? (waitTime = 15000) : null;
+                            index === 12 ? (waitTime = 20000) : null;
+                            index === 15 ? (waitTime = 30000) : null;
+                            index === 20 ? (waitTime = 30000) : null;
+                            index === 20 ? (waitTime = 60000) : null;
+                            index === 30 ? (waitTime = 90000) : null;
+                            index === 60 ? (waitTime = 150) : null;
+                            index === 60 ? (waitTime = 150) : null;
+
+                            if (index === 500) {
+                                // 500x150/60/60 : its been 20Hours, way to much, something has gone wrong, stop this and report the err
+                                console.log(
+                                    "[$] The shop has been running for a full day, something isn't right! stopping the fetching " +
+                                        shop
+                                );
+                                reject(
+                                    "The fetch request has been running for a full 20 hours now, something has went wrong!"
+                                );
+                            }
+
+                            setTimeout(getUrl, 3000);
                         }
                     })
                     .catch((err) => {
-                        clearInterval(timerId);
                         reject(err);
                     });
             } catch (err) {
-                clearInterval(timerId);
                 reject(err);
             }
-        }, 2000);
+        }
+
+        getUrl();
     });
 };
 

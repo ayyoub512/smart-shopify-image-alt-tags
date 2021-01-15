@@ -1,3 +1,4 @@
+const fs = require("fs");
 var jwt = require("jsonwebtoken");
 const shops = require("../../../db/shops");
 
@@ -9,6 +10,8 @@ const processData = require("../../../helpers/processData");
  * @URI /api/shopify/
  */
 export default async function templateForm(req, res) {
+    let jsonlFilePath;
+
     return new Promise((resolve, reject) => {
         /**
          * Verify token and see if the current store on the cookies is the real store
@@ -64,8 +67,9 @@ export default async function templateForm(req, res) {
                 return getBulkData.downloadJSONL(jsonlURL);
             })
 
-            .then((jsonlFilePath) => {
-                return processData.processFile(jsonlFilePath);
+            .then((jsonlFilePath_) => {
+                jsonlFilePath = jsonlFilePath_;
+                return processData.processFile(jsonlFilePath_);
             })
 
             .then((resultsArray) => {
@@ -73,14 +77,19 @@ export default async function templateForm(req, res) {
             })
 
             .then((mutationDone) => {
+                fs.unlinkSync(jsonlFilePath);
+
                 if (mutationDone) console.log("Mutation Done") && resolve();
                 else console.log("Mutation not done") && reject("Something went wrong while mutation");
             })
 
             .catch((err) => {
+                if (jsonlFilePath) fs.unlinkSync(jsonlFilePath);
+                console.log(err);
                 reject(err);
             });
     }).catch((err) => {
+        if (jsonlFilePath) fs.unlinkSync(jsonlFilePath);
         console.log("> Something went wrong ", err.message ? err.message : err);
 
         res.status(401).json({ msg: "Bad request, Please re-authenticate!", error: true });

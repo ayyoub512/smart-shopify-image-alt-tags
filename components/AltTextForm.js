@@ -34,11 +34,11 @@ class AltTextForm extends React.Component {
     }
 
     render() {
-        if (this.state.isLoading) return <LoadingComponent />;
+        // if (this.state.isLoading) return <LoadingComponent />;
 
         return (
             <Page title='Alt Value Setup'>
-                {/* {this.state.isLoading && <LoadingComponent />} */}
+                {this.state.isLoading && <LoadingComponent />}
                 <Layout>
                     <Layout.Section oneHalf>
                         <Card sectioned>
