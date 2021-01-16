@@ -73,15 +73,17 @@ export default async function templateForm(req, res) {
             })
 
             .then((resultsArray) => {
-                return processData.processResultsArray(shop, accessToken, resultsArray, templateValue, shopName);
+                // return processData.processResultsArray(shop, accessToken, resultsArray, templateValue, shopName);
+                processData.processResultsArray(shop, accessToken, resultsArray, templateValue, shopName);
+                console.log("Is it done ? ");
             })
 
-            .then((mutationDone) => {
-                fs.unlinkSync(jsonlFilePath);
+            // .then((mutationDone) => {
+            //     fs.unlinkSync(jsonlFilePath);
 
-                if (mutationDone) console.log("Mutation Done") && resolve();
-                else console.log("Mutation not done") && reject("Something went wrong while mutation");
-            })
+            //     if (mutationDone) console.log("Mutation Done") && resolve();
+            //     else console.log("Mutation not done") && reject("Something went wrong while mutation");
+            // })
 
             .catch((err) => {
                 if (jsonlFilePath) fs.unlinkSync(jsonlFilePath);

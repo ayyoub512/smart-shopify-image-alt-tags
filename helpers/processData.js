@@ -1,76 +1,87 @@
 const readline = require("readline");
 const fs = require("fs");
 const mutations = require("../db/myMutations");
+import axios from "axios";
+import Bottleneck from "bottleneck";
 
-/**
- * @param {string} shop is the shopOrigin arabycode.myshopify.com
- * @param {string} token  The access token
- * @param {string} jsonlFilePath  the path to the jsonl file
- * @param {string} templateValue the template value ex: [template_value]
- */
-const processResultsArray = (shop, token, dataArray, templateValue, shopName) => {
-    return new Promise(async (resolve, reject) => {
-        const template = "[shop_name] [product_title] Eluxers";
+async function prepareAndUpdateProduct(shop, accessToken, mutation) {
+    try {
+        const axiosConfig = {
+            url: "https://" + shop + "/admin/api/2021-01/graphql.json",
+            method: "post",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Shopify-Access-Token": accessToken,
+            },
+            data: {
+                query: mutation,
+            },
+        };
 
-        let res = [];
-        let forEvery = 1;
-        let waitTime = 4000;
-        let index = 0;
+        return axios(axiosConfig);
+    } catch (e) {
+        return e.message ?? e;
+    }
+}
 
-        // for (const item of dataArray) {
-        //     // dataArray.forEach(async (item, i) => {
-        //     console.log("Inside dataArray.forEach(async (item, index) => {");
-        //     /**
-        //      *  Generate Muation to update the alt text to shopname
-        //      *  code and run it for every 2 products
-        //      */
-        //     if (res.length <= forEvery) {
-        //         res.push(item);
-        //     } else {
-        //         let mutation = dataArray.map((product) => {
-        //             index += 1;
-        //             let template = templateValue.replace(/\[shop_name\]/gi, shopName);
-        //             template = template.replace(/\[product_title\]/gi, product.title);
-        //             template = template.replace(/\[product_vendor\]/g, product.vendor);
-        //             template = template.replace(/\[product_type\]/gi, product.productType);
-        //             template = template.replace(/\[product_handle\]/gi, product.handle);
+const processResultsArray = async (shop, accessToken, dataArray, templateValue, shopName) => {
+    try {
+        let index = 0; // used for mutation names
 
-        //             template = template.substring(0, 490);
-        //             // https://stackoverflow.com/questions/4374822/remove-all-special-characters-with-regexp
-        //             template = template.replace(/[^\w\s:\.,]/gi, "");
+        const limiter = new Bottleneck({
+            maxConcurrent: 2,
+            minTime: 5000,
+        });
 
-        //             return (
-        //                 `
-        //             mutation${index}: productUpdate(input: {
-        //                 id: "${product.id}",
-        //                 images: [
-        //                         ` +
-        //                 product.productImages.map((img) => {
-        //                     return `{id: "${img.id}", altText: "${template}"}`;
-        //                 }) +
-        //                 `
-        //                     ]
-        //             }) {
-        //                     userErrors {
-        //                         field
-        //                         message
-        //                     }
-        //                 }
-        //             `
-        //             );
-        //         });
+        const allTasks = dataArray.map((product) => {
+            let template = templateValue.replace(/\[shop_name\]/gi, shopName);
+            template = template.replace(/\[product_title\]/gi, product.title);
+            template = template.replace(/\[product_vendor\]/g, product.vendor);
+            template = template.replace(/\[product_type\]/gi, product.productType);
+            template = template.replace(/\[product_handle\]/gi, product.handle);
+            index++;
 
-        //         // make an api request to perform  the mutation
+            template = template.substring(0, 490);
+            // https://stackoverflow.com/questions/4374822/remove-all-special-characters-with-regexp
+            template = template.replace(/[^\w\s:\.,]/gi, "");
 
-        //         console.log("await mutations.altTextMutation(shop, token, mutation);");
-        //         const data = await mutations.altTextMutation(shop, token, mutation);
-        //         console.log("Done ");
+            const itemMutation =
+                `mutation {
+                    productUpdate(input: {
+                    id: "${product.id}",
+                    images: [
+                        ` +
+                product.productImages.map((img) => {
+                    return `{id: "${img.id}", altText: "${template}"}`;
+                }) +
+                `
+                        ]
+                }) {
+                    userErrors {
+                        field
+                        message
+                    }
+                }
+            }
+            
+                `;
 
-        //         // mutation = `mutation {${mutation}}`;
-        //         // data = mutations.altTextMutation(shop, token, mutation);
-        //     }
-        // }
-    });
+            console.log(itemMutation);
+
+            return limiter.schedule(() => {
+                return prepareAndUpdateProduct(shop, accessToken, itemMutation)
+                    .then((data) => {
+                        console.log(data?.data);
+                        console.log(data?.data?.errors);
+                    })
+                    .catch((err) => console.log(err));
+            });
+        });
+
+        await Promise.all(allTasks);
+    } catch (err) {
+        console.log("Something went wrong, ", err.message);
+    }
 };
 
 const processFile = (jsonlFilePath) => {
@@ -149,3 +160,11 @@ module.exports = {
     processFile,
     processResultsArray,
 };
+
+/**
+ *
+ * This has freaking saved me
+ * https://stackoverflow.com/questions/55460298/async-await-bottleneck-rate-limiting-using-promise-all
+ *
+ *
+ */

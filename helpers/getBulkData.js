@@ -84,7 +84,7 @@ const bulkStatusQuery = (shop, token) => {
 
                         if (url) resolve(url);
                         else {
-                            console.log(res?.data?.status);
+                            // console.log(res?.data?.status);
                             index === 2 ? (waitTime = 4000) : null;
                             index === 4 ? (waitTime = 8000) : null;
                             index === 8 ? (waitTime = 12000) : null;
