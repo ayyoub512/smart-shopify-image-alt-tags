@@ -29,9 +29,28 @@ const processResultsArray = async (shop, accessToken, dataArray, templateValue, 
         let index = 0; // used for mutation names
 
         const limiter = new Bottleneck({
-            maxConcurrent: 2,
-            minTime: 5000,
+            // reservoir: 90, // initial amount
+            // reservoirRefreshAmount: 2,
+            // reservoirRefreshInterval: 1000,
+
+            reservoir: 80, // initial value
+            reservoirIncreaseAmount: 4,
+            reservoirIncreaseInterval: 1000, // must be divisible by 250
+            reservoirIncreaseMaximum: 90,
+
+            // also use maxConcurrent and/or minTime for safety
+            // minTime: 250, // pick a value that makes sense for your use case
         });
+
+        // let interval = setInterval(() => {
+        //     // Every second, increment the reservoir by 2, up to a maximum of 40
+        //     limiter.currentReservoir().then((reservoir) => {
+        //         var incrBy = Math.min(2, 40 - reservoir);
+        //         if (incrBy > 0) {
+        //             return limiter.incrementReservoir(incrBy);
+        //         }
+        //     });
+        // }, 1000);
 
         const allTasks = dataArray.map((product) => {
             let template = templateValue.replace(/\[shop_name\]/gi, shopName);
@@ -66,13 +85,12 @@ const processResultsArray = async (shop, accessToken, dataArray, templateValue, 
             
                 `;
 
-            console.log(itemMutation);
-
             return limiter.schedule(() => {
                 return prepareAndUpdateProduct(shop, accessToken, itemMutation)
                     .then((data) => {
-                        console.log(data?.data);
-                        console.log(data?.data?.errors);
+                        console.log("\n\n data >", data?.data?.data);
+                        console.log("throttleStatus >", data?.data?.extensions?.cost?.throttleStatus);
+                        console.log("actualQueryCost >", data?.data?.extensions?.cost?.actualQueryCost);
                     })
                     .catch((err) => console.log(err));
             });

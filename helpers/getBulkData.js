@@ -84,9 +84,8 @@ const bulkStatusQuery = (shop, token) => {
 
                         if (url) resolve(url);
                         else {
-                            // console.log(res?.data?.status);
-                            index === 2 ? (waitTime = 4000) : null;
-                            index === 4 ? (waitTime = 8000) : null;
+                            index === 2 ? (waitTime = 3000) : null;
+                            index === 4 ? (waitTime = 7000) : null;
                             index === 8 ? (waitTime = 12000) : null;
                             index === 10 ? (waitTime = 15000) : null;
                             index === 12 ? (waitTime = 20000) : null;
@@ -96,6 +95,8 @@ const bulkStatusQuery = (shop, token) => {
                             index === 30 ? (waitTime = 90000) : null;
                             index === 60 ? (waitTime = 150) : null;
                             index === 60 ? (waitTime = 150) : null;
+
+                            waitTime = 1000;
 
                             if (index === 500) {
                                 // 500x150/60/60 : its been 20Hours, way to much, something has gone wrong, stop this and report the err
@@ -108,7 +109,7 @@ const bulkStatusQuery = (shop, token) => {
                                 );
                             }
 
-                            setTimeout(getUrl, 3000);
+                            setTimeout(getUrl, waitTime);
                         }
                     })
                     .catch((err) => {
