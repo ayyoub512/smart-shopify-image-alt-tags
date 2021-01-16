@@ -82,7 +82,7 @@ app.prepare().then(() => {
                 /***
                  * JWT
                  */
-                const token = jwt.sign({ shop_origin: shop, access_token: accessToken }, process.env.JWT_SECRET);
+                const token = jwt.sign({ shopOrigin: shop, accessToken: accessToken }, process.env.JWT_SECRET);
                 ctx.cookies.set("alt-text-app", token, {
                     httpOnly: true,
                     secure: true,

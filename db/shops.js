@@ -9,9 +9,9 @@ module.exports = {
                 return;
             }
             shopData = {
-                shop_origin: shop,
-                access_token: accessToken,
-                added_time: basefunc.getCurrentTimestamp(),
+                shopOrigin: shop,
+                accessToken: accessToken,
+                updatedAt: basefunc.getCurrentTimestamp(),
             };
             let query = "INSERT INTO shops SET ?";
             return new Promise(function (resolve, reject) {
@@ -24,7 +24,7 @@ module.exports = {
     },
 
     findShopByName: function (shop) {
-        let query = "SELECT * FROM shops WHERE shop_origin = ?";
+        let query = "SELECT * FROM shops WHERE shopOrigin = ?";
         return new Promise(function (resolve, reject) {
             db.query(query, shop, function (err, result) {
                 if (err) return reject(err);
@@ -35,7 +35,7 @@ module.exports = {
     },
 
     updateShop: function (shop, accessToken) {
-        let query = "UPDATE shops SET access_token = ? WHERE shop_origin = ?";
+        let query = "UPDATE shops SET accessToken = ? WHERE shopOrigin = ?";
         return new Promise(function (resolve, reject) {
             db.query(query, [accessToken, shop], function (err, result) {
                 if (err) return reject(err);
@@ -59,25 +59,15 @@ module.exports = {
         let query =
             `UPDATE shops SET email = ` +
             mysql.escape(email) +
-            `, contact_email = ` +
+            `, contactEmail = ` +
             mysql.escape(contactEmail) +
-            `, shop_name = ` +
+            `, shopName = ` +
             mysql.escape(shopName) +
-            `WHERE shop_origin = ` +
+            `WHERE shopOrigin = ` +
             mysql.escape(shop);
 
         return new Promise(function (resolve, reject) {
             db.query(query, function (err, result) {
-                if (err) return reject(err);
-                return resolve(result);
-            });
-        });
-    },
-
-    setStatus: function (shop, status) {
-        let query = "UPDATE shops SET status = ? WHERE shop_origin = ?";
-        return new Promise(function (resolve, reject) {
-            db.query(query, [status, shop], function (err, result) {
                 if (err) return reject(err);
                 return resolve(result);
             });

@@ -24,33 +24,14 @@ async function prepareAndUpdateProduct(shop, accessToken, mutation) {
     }
 }
 
-const processResultsArray = async (shop, accessToken, dataArray, templateValue, shopName) => {
+async function processProductsArray(shop, accessToken, dataArray, templateValue, shopName) {
     try {
-        let index = 0; // used for mutation names
-
         const limiter = new Bottleneck({
-            // reservoir: 90, // initial amount
-            // reservoirRefreshAmount: 2,
-            // reservoirRefreshInterval: 1000,
-
-            reservoir: 80, // initial value
-            reservoirIncreaseAmount: 4,
+            reservoir: 70, // initial value
+            reservoirIncreaseAmount: 5,
             reservoirIncreaseInterval: 1000, // must be divisible by 250
-            reservoirIncreaseMaximum: 90,
-
-            // also use maxConcurrent and/or minTime for safety
-            // minTime: 250, // pick a value that makes sense for your use case
+            reservoirIncreaseMaximum: 70,
         });
-
-        // let interval = setInterval(() => {
-        //     // Every second, increment the reservoir by 2, up to a maximum of 40
-        //     limiter.currentReservoir().then((reservoir) => {
-        //         var incrBy = Math.min(2, 40 - reservoir);
-        //         if (incrBy > 0) {
-        //             return limiter.incrementReservoir(incrBy);
-        //         }
-        //     });
-        // }, 1000);
 
         const allTasks = dataArray.map((product) => {
             let template = templateValue.replace(/\[shop_name\]/gi, shopName);
@@ -58,10 +39,7 @@ const processResultsArray = async (shop, accessToken, dataArray, templateValue, 
             template = template.replace(/\[product_vendor\]/g, product.vendor);
             template = template.replace(/\[product_type\]/gi, product.productType);
             template = template.replace(/\[product_handle\]/gi, product.handle);
-            index++;
-
             template = template.substring(0, 490);
-            // https://stackoverflow.com/questions/4374822/remove-all-special-characters-with-regexp
             template = template.replace(/[^\w\s:\.,]/gi, "");
 
             const itemMutation =
@@ -85,27 +63,34 @@ const processResultsArray = async (shop, accessToken, dataArray, templateValue, 
             
                 `;
 
-            return limiter.schedule(() => {
-                return prepareAndUpdateProduct(shop, accessToken, itemMutation)
-                    .then((data) => {
-                        console.log("\n\n data >", data?.data?.data);
-                        console.log("throttleStatus >", data?.data?.extensions?.cost?.throttleStatus);
-                        console.log("actualQueryCost >", data?.data?.extensions?.cost?.actualQueryCost);
-                    })
-                    .catch((err) => console.log(err));
-            });
+            return limiter
+                .schedule(() => {
+                    return prepareAndUpdateProduct(shop, accessToken, itemMutation);
+                })
+                .then((data) => {
+                    // // console.log("\n\n data >", data);
+                    // console.log("\n\n\n\n\n\n\n\n\n data >", data?.data);
+                    // console.log(itemMutation);
+                    // console.log("throttleStatus >", data?.data?.extensions?.cost?.throttleStatus);
+                    // console.log("actualQueryCost >", data?.data?.extensions?.cost?.actualQueryCost);
+                })
+                .catch((err) => console.log("ProcessData.Limiter.sechedul.catch.erro : ", err));
         });
 
         await Promise.all(allTasks);
+
+        return limiter.done();
     } catch (err) {
         console.log("Something went wrong, ", err.message);
+        return err;
     }
-};
+}
 
 const processFile = (jsonlFilePath) => {
-    return new Promise((resolve, reject) => {
-        let res = [];
+    let res = [];
+    let countImgs = 0;
 
+    return new Promise((resolve, reject) => {
         const readInterface = readline.createInterface({
             input: fs.createReadStream(jsonlFilePath),
             console: false,
@@ -159,24 +144,25 @@ const processFile = (jsonlFilePath) => {
                 } else {
                     // It must be productImage then
                     res[__parentId].productImages.push(myLine);
+                    countImgs++;
                 }
 
                 return res;
             } catch (err) {
-                reject("");
+                reject(err);
             }
         });
 
         readInterface.on("close", function () {
-            const resultsArray = Object.values(res);
-            resolve(resultsArray);
+            const productsArray = Object.values(res);
+            resolve([productsArray, countImgs]);
         });
     });
 };
 
 module.exports = {
     processFile,
-    processResultsArray,
+    processProductsArray,
 };
 
 /**

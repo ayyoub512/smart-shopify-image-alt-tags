@@ -1,6 +1,8 @@
 const fs = require("fs");
 var jwt = require("jsonwebtoken");
+
 const shops = require("../../../db/shops");
+const status = require("../../../db/status");
 
 const getBulkData = require("../../../helpers/getBulkData");
 const processData = require("../../../helpers/processData");
@@ -10,7 +12,14 @@ const processData = require("../../../helpers/processData");
  * @URI /api/shopify/
  */
 export default async function templateForm(req, res) {
+    // Global placeholders to use later on..
     let jsonlFilePath;
+    let shopName;
+    let productsProcessed = 0;
+    let imgsProcessed = 0;
+    let templateValue;
+    let shopId;
+    let operationStatus = 1;
 
     return new Promise((resolve, reject) => {
         /**
@@ -18,7 +27,7 @@ export default async function templateForm(req, res) {
          * we have on the databse
          */
         const undecodedToken = req.cookies["alt-text-app"];
-        const templateValue = req.body.templateValue;
+        templateValue = req.body.templateValue;
 
         if (!undecodedToken || !templateValue) {
             console.log("400 Bad Request");
@@ -32,26 +41,24 @@ export default async function templateForm(req, res) {
             throw new Error("401 Authorisation denied!");
         }
 
-        const shop = decoded.shop_origin;
-        const accessToken = decoded.access_token;
-        let shopName;
+        const shop = decoded.shopOrigin;
+        const accessToken = decoded.accessToken;
 
         shops
             .findShopByName(shop)
             .then((data) => {
-                if (
-                    data.shop_origin &&
-                    data.access_token &&
-                    data.shop_origin == shop &&
-                    data.access_token == accessToken
-                ) {
+                if (data.shopOrigin && data.accessToken && data.shopOrigin == shop && data.accessToken == accessToken) {
                     /***
                      * this is a greate place to return something back to the user.
                      * If the request made it here meaning everything thats required from the user has been fulfilled,
                      * all left is for us to process the request.
                      */
                     shopName = data.shop_name;
+                    shopId = data.id;
+
                     res.json({ msg: "The server has received your rquest and is processing it!", error: false });
+
+                    console.log(" > Starting operation for ", shopName);
 
                     return getBulkData.initBulkRequest(shop, accessToken);
                 } else {
@@ -72,28 +79,53 @@ export default async function templateForm(req, res) {
                 return processData.processFile(jsonlFilePath_);
             })
 
-            .then((resultsArray) => {
-                // return processData.processResultsArray(shop, accessToken, resultsArray, templateValue, shopName);
-                processData.processResultsArray(shop, accessToken, resultsArray, templateValue, shopName);
-                console.log("Is it done ? ");
+            .then((data) => {
+                let [productsArray, countImgs] = data;
+                imgsProcessed = countImgs;
+                console.log("Counted, ", countImgs);
+                productsProcessed = productsArray.length;
+
+                return processData.processProductsArray(shop, accessToken, productsArray, templateValue, shopName);
             })
 
-            // .then((mutationDone) => {
-            //     fs.unlinkSync(jsonlFilePath);
-
-            //     if (mutationDone) console.log("Mutation Done") && resolve();
-            //     else console.log("Mutation not done") && reject("Something went wrong while mutation");
-            // })
+            .then((completedMutationsCount) => {
+                // Lets update the status table with the recent value!
+                // res.json({ msg: "Bad request, Please re-authenticate!", error: true });
+                operationStatus = 1;
+            })
 
             .catch((err) => {
-                if (jsonlFilePath) fs.unlinkSync(jsonlFilePath);
                 console.log(err);
+                operationStatus = -1;
                 reject(err);
-            });
-    }).catch((err) => {
-        if (jsonlFilePath) fs.unlinkSync(jsonlFilePath);
-        console.log("> Something went wrong ", err.message ? err.message : err);
+            })
 
-        res.status(401).json({ msg: "Bad request, Please re-authenticate!", error: true });
+            .finally(async () => {
+                productsProcessed;
+                imgsProcessed;
+                try {
+                    if (shopId) {
+                        await status.setStatus(
+                            shopId,
+                            operationStatus,
+                            templateValue,
+                            productsProcessed,
+                            imgsProcessed
+                        );
+                    }
+
+                    // DELETING THE FILE
+                    if (jsonlFilePath) await fs.unlinkSync(jsonlFilePath);
+                } catch (err) {
+                    console.log(err);
+                }
+            });
+        /**
+         *
+         *
+         *
+         */
+    }).catch((err) => {
+        console.log("Error ", err);
     });
 }

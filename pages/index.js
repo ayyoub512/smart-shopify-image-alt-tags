@@ -2,12 +2,15 @@ import React from "react";
 import axios from "axios";
 
 import shops from "../db/shops";
+import status from "../db/status";
+
 import { randomNumber } from "../helpers/randomNum";
 
 import { GET_IMGS_QUERY } from "../db/queries";
 import AltTextForm from "../components/AltTextForm";
 import ErrorsHandler from "../components/ErrorsHandler";
 import Working from "../components/Working";
+import Success from "../components/Success";
 
 class Index extends React.Component {
     constructor(props) {
@@ -18,6 +21,8 @@ class Index extends React.Component {
             status: props.status,
             shopName: props.shopName,
             isError: props.isError,
+            imgsProcessed: props.imgsProcessed,
+            productsProcessed: props.productsProcessed,
         };
     }
 
@@ -25,6 +30,10 @@ class Index extends React.Component {
         if (!this.state.isError && this.state.status == 0)
             return <AltTextForm product={this.state.product} shopName={this.state.shopName} />;
         else if (this.state.status == 2) return <Working />;
+        else if (this.state.status == 1)
+            return (
+                <Success imgsProcessed={this.state.imgsProcessed} productsProcessed={this.state.productsProcessed} />
+            );
         else return <ErrorsHandler />;
     }
 }
@@ -41,7 +50,9 @@ export async function getServerSideProps(ctx) {
     let shopName; // gets retreived from the db later
     let isError = false;
     let templateValue;
-    let status = 0; // by default status = 0, first time.
+    let operationStatus = 0; // by default status = 0, first time.
+    let productsProcessed;
+    let imgsProcessed;
 
     try {
         if (!shop) throw new Error("Something went wrong");
@@ -52,12 +63,17 @@ export async function getServerSideProps(ctx) {
         const findShopData = await shops.findShopByName(shop);
         const fsd_email = findShopData.email;
         const fsd_contactEmail = findShopData.contactEmail;
-        const accessToken = findShopData.access_token;
-        status = findShopData.status;
-        templateValue = findShopData.template_value;
+        const accessToken = findShopData.accessToken;
+        const shopId = findShopData.id;
+
+        const statusData = await status.getLastStatus(shopId);
+        templateValue = statusData.templateValue ?? " ";
+        operationStatus = statusData.status ?? 0;
+        productsProcessed = statusData.productsProcessed;
+        imgsProcessed = statusData.imgsProcessed;
 
         /// When status code = 0, means first time
-        if (status == 0) {
+        if (operationStatus == 0) {
             const url = "https://" + shop + "/admin/api/2021-01/graphql.json";
 
             const result = await axios({
@@ -117,8 +133,10 @@ export async function getServerSideProps(ctx) {
             product: product ?? {},
             shopName: "",
             templateValue: templateValue ?? null,
-            status,
+            status: operationStatus,
             isError,
+            productsProcessed: productsProcessed ?? 0,
+            imgsProcessed: imgsProcessed ?? 0,
         },
     };
 }

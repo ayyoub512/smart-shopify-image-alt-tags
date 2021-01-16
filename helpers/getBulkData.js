@@ -65,7 +65,6 @@ const bulkStatusQuery = (shop, token) => {
         let waitTime = 2000;
 
         function getUrl() {
-            index++;
             console.log(" - No URL: new interval ");
             try {
                 axios({
@@ -96,8 +95,6 @@ const bulkStatusQuery = (shop, token) => {
                             index === 60 ? (waitTime = 150) : null;
                             index === 60 ? (waitTime = 150) : null;
 
-                            waitTime = 1000;
-
                             if (index === 500) {
                                 // 500x150/60/60 : its been 20Hours, way to much, something has gone wrong, stop this and report the err
                                 console.log(
@@ -108,7 +105,7 @@ const bulkStatusQuery = (shop, token) => {
                                     "The fetch request has been running for a full 20 hours now, something has went wrong!"
                                 );
                             }
-
+                            index += 1;
                             setTimeout(getUrl, waitTime);
                         }
                     })
