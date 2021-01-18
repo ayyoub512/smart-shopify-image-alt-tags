@@ -8,13 +8,13 @@ const session = require("koa-session");
 
 // Webhooks
 const Router = require("@koa/router");
-const { receiveWebhook } = require("@shopify/koa-shopify-webhooks");
 
-// const hooksRouter = require("./routes/webhooks");
+const bodyParser = require("koa-bodyparser");
+
+const { hooksRouter } = require("./routes/webhooks");
+const { apiRouter } = require("./routes/api");
 
 const { registerWebhook } = require("@shopify/koa-shopify-webhooks");
-
-const hooksHandler = require("./helpers/hooksHandler");
 
 const path = require("path");
 const mysql = require("mysql");
@@ -39,6 +39,7 @@ global.appRoot = path.resolve(__dirname);
  * Connecting to the database
  * */
 const shopModel = require("./db/shops");
+const { Console } = require("console");
 
 var dbConn = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -60,6 +61,7 @@ global.db = dbConn;
  */
 
 const { SHOPIFY_API_SECRET_KEY, SHOPIFY_API_KEY, HOST } = process.env;
+console.log("SERVER.JS: HOST", HOST);
 
 app.prepare().then(() => {
     const server = new Koa();
@@ -80,11 +82,13 @@ app.prepare().then(() => {
                 shopModel.addShop(shop, accessToken);
 
                 const token = jwt.sign({ shopOrigin: shop }, process.env.JWT_SECRET);
-                ctx.cookies.set("alt-text-app", token, {
-                    httpOnly: true,
-                    secure: true,
-                    sameSite: "none",
-                });
+
+                // ctx.cookies.set("alt-text-app", token, {
+                //     httpOnly: true,
+                //     secure: true,
+                //     sameSite: "none",
+                // });
+
                 ctx.cookies.set("shopOrigin", shop, {
                     httpOnly: false,
                     secure: true,
@@ -106,6 +110,18 @@ app.prepare().then(() => {
                     apiVersion: ApiVersion.October19,
                 });
 
+                if (productCreateRegis.success) {
+                    console.log("Successfully registered PRODUCTS_CREATE webhook!");
+                } else {
+                    console.log("Failed to register webhook PRODUCTS_CREATE", registration.result);
+                }
+
+                if (productUpdateRegis.success) {
+                    console.log("Successfully registered PRODUCTS_CREATE webhook!");
+                } else {
+                    console.log("Failed to register webhook PRODUCTS_CREATE", registration.result);
+                }
+
                 const isPremium = true;
                 if (!isPremium) {
                     // Billing API
@@ -119,22 +135,11 @@ app.prepare().then(() => {
         })
     ); /** END OF CUSTOM MILDDLWARE */
 
-    const webhook = receiveWebhook({ secret: SHOPIFY_API_SECRET_KEY });
-
-    router.post("/webhooks/products/create", webhook, (ctx) => {
-        console.log("[+] WEBHOOK RECEIVED! - /webhooks/products/create");
-
-        hooksHandler.productUpdated(ctx.state.webhook, false);
-    });
-
-    router.post("/webhooks/products/update", webhook, (ctx) => {
-        console.log("[+] WEBHOOK RECEIVED! - /webhooks/products/update");
-        hooksHandler.productUpdated(ctx.state.webhook);
-    });
-
-    server.use(router.allowedMethods());
-    server.use(router.routes());
-    // server.use(hooksRouter);
+    server.use(bodyParser()); // Use the body parser before anything else so we can access ctx.request.body
+    server.use(hooksRouter.routes());
+    server.use(hooksRouter.allowedMethods());
+    server.use(apiRouter.routes());
+    server.use(apiRouter.allowedMethods());
 
     server.use(graphQLProxy({ version: ApiVersion.October19 }));
 
@@ -144,8 +149,9 @@ app.prepare().then(() => {
         ctx.respond = false;
         ctx.res.statusCode = 200;
     });
-    server.use(router.allowedMethods());
+
     server.use(router.routes());
+    server.use(router.allowedMethods());
 
     server.listen(port, () => {
         console.log(`> Ready on https://localhost:${port}`);

@@ -1,8 +1,8 @@
 const readline = require("readline");
 const fs = require("fs");
 const mutations = require("../db/myMutations");
-import axios from "axios";
-import Bottleneck from "bottleneck";
+const axios = require("axios");
+const Bottleneck = require("bottleneck");
 
 async function prepareAndUpdateProduct(shop, accessToken, mutation) {
     try {
@@ -155,16 +155,16 @@ const processFile = (jsonlFilePath) => {
 };
 
 function processHookPayload(payload) {
-    const shop = payload?.domain;
-    const topic = payload?.topic;
-    const product = payload?.payload;
-    const images = product?.images;
+    let shop = payload?.domain;
+    let topic = payload?.topic;
+    let product = payload?.payload;
+    let images = product?.images;
 
     if (!shop || !topic || !images.length > 0) return;
 
-    const templateValue = ""; // comes from the db
-    const mutationQuery = []; /**The mutation query to update img that have been modified */
-    const shopName; // comes from the db
+    let templateValue = ""; // comes from the db
+    let mutationQuery = []; /**The mutation query to update img that have been modified */
+    let shopName; // comes from the db
 
     images.forEach((img) => {
         let alt = templateValue.replace(/\[shop_name\]/gi, shopName);

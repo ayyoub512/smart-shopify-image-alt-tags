@@ -183,12 +183,12 @@ class AltTextForm extends React.Component {
         const templateValue = this.state.value.trim();
         if (templateValue.length > 0) {
             axios
-                .post("/api/shopify/", {
+                .post("/api", {
                     templateValue,
                 })
                 .then(
                     (result) => {
-                        console.log(result);
+                        console.log(result.data);
                     },
                     // Note: it's important to handle errors here
                     // instead of a catch() block so that we don't swallow

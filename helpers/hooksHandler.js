@@ -2,10 +2,12 @@ const util = require("util");
 const status = require("../db/status");
 
 function productUpdated(payload, isUpdated = true) {
+    console.log("Iam herre");
+
     let res = [];
     const shop = payload.domain;
 
-    console.log(util.inspect(payload, { showHidden: false, depth: null }));
+    // console.log(util.inspect(payload, { showHidden: false, depth: null }));
 }
 
 module.exports = {

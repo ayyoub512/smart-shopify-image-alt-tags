@@ -1,4 +1,4 @@
-export const BULK_INIT_MUTATION = `
+const BULK_INIT_MUTATION = `
     mutation {
       bulkOperationRunQuery(
         query: """
@@ -12,16 +12,6 @@ export const BULK_INIT_MUTATION = `
                 productType
                 handle
 
-
-
-                 featuredImage {
-                  id
-                  originalSrc
-                  altText
-                }
-
-
-
                images(first: 2) {
                   edges {
                     node {
@@ -30,33 +20,6 @@ export const BULK_INIT_MUTATION = `
                     }
                   }
                 }
-
-
-                 options(first:2){
-                  values
-                }
-
-
-
-                 variants(first: 2) {
-                  edges {
-                    node {
-                      id
-                      image {
-                        id
-                        originalSrc
-                        altText
-                      }
-                      title
-                      product {
-                        id
-                        title
-                      }
-                    }
-                  }
-                }
-
-
 
               }
             }
@@ -82,7 +45,7 @@ export const BULK_INIT_MUTATION = `
   }
 `;
 
-export const BULK_STATUS_QUERY = `
+const BULK_STATUS_QUERY = `
     query {
         currentBulkOperation {
             id
@@ -97,3 +60,8 @@ export const BULK_STATUS_QUERY = `
         }
     }
 `;
+
+module.exports = {
+    BULK_INIT_MUTATION,
+    BULK_STATUS_QUERY,
+};
