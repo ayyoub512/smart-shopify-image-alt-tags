@@ -67,11 +67,13 @@ export async function getServerSideProps(ctx) {
         const shopId = findShopData.id;
 
         const statusData = await status.getLastStatus(shopId);
-        templateValue = statusData.templateValue ?? " ";
-        operationStatus = statusData.status ?? 0;
-        productsProcessed = statusData.productsProcessed;
-        imgsProcessed = statusData.imgsProcessed;
+        operationStatus = statusData?.status ?? 0;
 
+        if (statusData) {
+            templateValue = statusData.templateValue ?? " ";
+            productsProcessed = statusData.productsProcessed;
+            imgsProcessed = statusData.imgsProcessed;
+        }
         /// When status code = 0, means first time
         if (operationStatus == 0) {
             const url = "https://" + shop + "/admin/api/2021-01/graphql.json";

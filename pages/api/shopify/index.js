@@ -12,6 +12,8 @@ const processData = require("../../../helpers/processData");
  * @URI /api/shopify/
  */
 export default async function templateForm(req, res) {
+    console.log("I have got ur request");
+
     // Global placeholders to use later on..
     let jsonlFilePath;
     let shopName;
@@ -21,12 +23,15 @@ export default async function templateForm(req, res) {
     let shopId;
     let operationStatus = 1;
 
+    let accessToken;
+    let shop;
+
     return new Promise((resolve, reject) => {
         /**
          * Verify token and see if the current store on the cookies is the real store
          * we have on the databse
          */
-        const undecodedToken = req.cookies["alt-text-app"];
+        const undecodedToken = req.cookies["alt-text-app"]; // containes the shopOrigin
         templateValue = req.body.templateValue;
 
         if (!undecodedToken || !templateValue) {
@@ -41,18 +46,16 @@ export default async function templateForm(req, res) {
             throw new Error("401 Authorisation denied!");
         }
 
-        const shop = decoded.shopOrigin;
-        const accessToken = decoded.accessToken;
-
         shops
             .findShopByName(shop)
             .then((data) => {
-                if (data.shopOrigin && data.accessToken && data.shopOrigin == shop && data.accessToken == accessToken) {
+                if (data.shopOrigin && data.accessToken && data.shopOrigin == decoded.shopOrigin) {
                     /***
                      * this is a greate place to return something back to the user.
                      * If the request made it here meaning everything thats required from the user has been fulfilled,
                      * all left is for us to process the request.
                      */
+                    shop = data.shopOrigin;
                     shopName = data.shop_name;
                     shopId = data.id;
 

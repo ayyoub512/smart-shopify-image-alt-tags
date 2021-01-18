@@ -109,9 +109,6 @@ const processFile = (jsonlFilePath) => {
                         vendor,
                         productType,
                         handle,
-                        featuredImage: featuredImage ?? {},
-                        options: options ?? [],
-                        productVariants: [],
                         productImages: [],
                     };
 
@@ -126,9 +123,6 @@ const processFile = (jsonlFilePath) => {
                         vendor,
                         productType,
                         handle,
-                        featuredImage: featuredImage ?? {},
-                        options: options ?? [],
-                        productVariants: [],
                         productImages: [],
                     };
                 }
@@ -159,6 +153,51 @@ const processFile = (jsonlFilePath) => {
         });
     });
 };
+
+function processHookPayload(payload) {
+    const shop = payload?.domain;
+    const topic = payload?.topic;
+    const product = payload?.payload;
+    const images = product?.images;
+
+    if (!shop || !topic || !images.length > 0) return;
+
+    const templateValue = ""; // comes from the db
+    const mutationQuery = []; /**The mutation query to update img that have been modified */
+    const shopName; // comes from the db
+
+    images.forEach((img) => {
+        let alt = templateValue.replace(/\[shop_name\]/gi, shopName);
+        alt = alt.replace(/\[product_title\]/gi, product.title);
+        alt = alt.replace(/\[product_vendor\]/g, product.vendor);
+        alt = alt.replace(/\[product_type\]/gi, product.productType);
+        alt = alt.replace(/\[product_handle\]/gi, product.handle);
+        alt = alt.substring(0, 490);
+        alt = alt.replace(/[^\w\s:\.,]/gi, "");
+
+        if (img.alt !== alt) {
+            const productId = "gid://shopify/Product/5933007110304";
+            const imgId = "gid://shopify/ProductImage/21121933901984";
+
+            const query = `
+                mutation ($productId: ${productId}, $image: { id: "${imgId}", alt: "${alt}"} ) {
+                    mutation productImageUpdate($productId: ID!, $image: ImageInput!) {
+                        productImageUpdate(productId: $productId, image: $image) {
+                        image {
+                            id
+                        }
+                        userErrors {
+                            field
+                            message
+                        }
+                        }
+                    }
+                }
+            
+            `;
+        }
+    });
+}
 
 module.exports = {
     processFile,

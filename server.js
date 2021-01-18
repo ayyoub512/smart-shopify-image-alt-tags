@@ -6,16 +6,21 @@ const { default: createShopifyAuth } = require("@shopify/koa-shopify-auth");
 const { verifyRequest } = require("@shopify/koa-shopify-auth");
 const session = require("koa-session");
 
+// Webhooks
+const Router = require("@koa/router");
+const { receiveWebhook } = require("@shopify/koa-shopify-webhooks");
+
+// const hooksRouter = require("./routes/webhooks");
+
+const { registerWebhook } = require("@shopify/koa-shopify-webhooks");
+
+const hooksHandler = require("./helpers/hooksHandler");
+
 const path = require("path");
-
 const mysql = require("mysql");
-
 const jwt = require("jsonwebtoken");
 
-/***
- * the end of
- * imports
- */
+const getSubscriptionUrl = require("./server/getSubscriptionUrl");
 
 dotenv.config();
 const { default: graphQLProxy } = require("@shopify/koa-shopify-graphql-proxy");
@@ -48,21 +53,19 @@ dbConn.connect(function (err) {
 });
 global.db = dbConn;
 
-/***
- * END OF CONNECTING TO THE DATABASE
+/**
+ * https://github.com/devwiz73/shopify-app-boilerplate/blob/master/server.js
+ * app.context is the prototype from which ctx is created.
+ * You may add additional properties to ctx by editing app.context.
  */
 
-const { SHOPIFY_API_SECRET_KEY, SHOPIFY_API_KEY } = process.env;
+const { SHOPIFY_API_SECRET_KEY, SHOPIFY_API_KEY, HOST } = process.env;
 
 app.prepare().then(() => {
     const server = new Koa();
-    server.context.db = dbConn;
-    /**
-     * https://github.com/devwiz73/shopify-app-boilerplate/blob/master/server.js
-     * app.context is the prototype from which ctx is created.
-     * You may add additional properties to ctx by editing app.context.
-     */
+    const router = new Router();
 
+    server.context.db = dbConn;
     server.use(session({ secure: true, sameSite: "none" }, server));
     server.keys = [SHOPIFY_API_SECRET_KEY];
 
@@ -71,45 +74,78 @@ app.prepare().then(() => {
             apiKey: SHOPIFY_API_KEY,
             secret: SHOPIFY_API_SECRET_KEY,
             scopes: ["read_products", "write_products", "read_assigned_fulfillment_orders"],
-
             async afterAuth(ctx) {
                 const { shop, accessToken } = ctx.session;
 
                 shopModel.addShop(shop, accessToken);
 
-                // console.log("> Authenticated+Saved : " + shop + " -token- " + accessToken);
-
-                /***
-                 * JWT
-                 */
-                const token = jwt.sign({ shopOrigin: shop, accessToken: accessToken }, process.env.JWT_SECRET);
+                const token = jwt.sign({ shopOrigin: shop }, process.env.JWT_SECRET);
                 ctx.cookies.set("alt-text-app", token, {
                     httpOnly: true,
                     secure: true,
                     sameSite: "none",
                 });
+                ctx.cookies.set("shopOrigin", shop, {
+                    httpOnly: false,
+                    secure: true,
+                    sameSite: "none",
+                });
 
-                // ctx.cookies.set("shopOrigin", shop, {
-                //     httpOnly: false,
-                //     secure: true,
-                //     sameSite: "none",
-                // });
+                const productCreateRegis = await registerWebhook({
+                    address: `${HOST}/webhooks/products/create`,
+                    topic: "PRODUCTS_CREATE",
+                    accessToken,
+                    shop,
+                    apiVersion: ApiVersion.October19,
+                });
+                const productUpdateRegis = await registerWebhook({
+                    address: `${HOST}/webhooks/products/update`,
+                    topic: "PRODUCTS_UPDATE",
+                    accessToken,
+                    shop,
+                    apiVersion: ApiVersion.October19,
+                });
+
+                const isPremium = true;
+                if (!isPremium) {
+                    // Billing API
+                    const subscriptionUrl = await getSubscriptionUrl(accessToken, shop);
+                    console.log(subscriptionUrl);
+                    ctx.redirect(subscriptionUrl);
+                }
 
                 ctx.redirect(`/?shop=${shop}`);
             },
         })
     ); /** END OF CUSTOM MILDDLWARE */
 
+    const webhook = receiveWebhook({ secret: SHOPIFY_API_SECRET_KEY });
+
+    router.post("/webhooks/products/create", webhook, (ctx) => {
+        console.log("[+] WEBHOOK RECEIVED! - /webhooks/products/create");
+
+        hooksHandler.productUpdated(ctx.state.webhook, false);
+    });
+
+    router.post("/webhooks/products/update", webhook, (ctx) => {
+        console.log("[+] WEBHOOK RECEIVED! - /webhooks/products/update");
+        hooksHandler.productUpdated(ctx.state.webhook);
+    });
+
+    server.use(router.allowedMethods());
+    server.use(router.routes());
+    // server.use(hooksRouter);
+
     server.use(graphQLProxy({ version: ApiVersion.October19 }));
 
-    server.use(verifyRequest());
-
-    server.use(async (ctx) => {
+    router.get("(.*)", verifyRequest(), async (ctx) => {
         await handle(ctx.req, ctx.res);
+
         ctx.respond = false;
         ctx.res.statusCode = 200;
-        return;
     });
+    server.use(router.allowedMethods());
+    server.use(router.routes());
 
     server.listen(port, () => {
         console.log(`> Ready on https://localhost:${port}`);
