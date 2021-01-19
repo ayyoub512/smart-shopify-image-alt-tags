@@ -113,13 +113,13 @@ app.prepare().then(() => {
                 if (productCreateRegis.success) {
                     console.log("Successfully registered PRODUCTS_CREATE webhook!");
                 } else {
-                    console.log("Failed to register webhook PRODUCTS_CREATE", registration.result);
+                    console.log("Failed to register webhook PRODUCTS_CREATE", productCreateRegis.result);
                 }
 
                 if (productUpdateRegis.success) {
                     console.log("Successfully registered PRODUCTS_CREATE webhook!");
                 } else {
-                    console.log("Failed to register webhook PRODUCTS_CREATE", registration.result);
+                    console.log("Failed to register webhook PRODUCTS_CREATE", productUpdateRegis.result);
                 }
 
                 const isPremium = true;

@@ -1,42 +1,11 @@
 const readline = require("readline");
 const fs = require("fs");
 
-const axios = require("axios");
-const Bottleneck = require("bottleneck");
-
-const mutations = require("../db/myMutations");
-const { templValueHandler } = require("./generalFuncs");
-
-async function prepareAndUpdateProduct(shop, accessToken, mutation) {
-    try {
-        const axiosConfig = {
-            url: "https://" + shop + "/admin/api/2021-01/graphql.json",
-            method: "post",
-            headers: {
-                "Content-Type": "application/json",
-                "X-Shopify-Access-Token": accessToken,
-            },
-            data: {
-                query: mutation,
-            },
-        };
-
-        return axios(axiosConfig);
-    } catch (e) {
-        return e.message ?? e;
-    }
-}
+const { templValueHandler, botlneckMutations } = require("./generalFuncs");
 
 async function processProductsArray(shop, accessToken, dataArray, templateValue, shopName) {
     try {
-        const limiter = new Bottleneck({
-            reservoir: 70, // initial value
-            reservoirIncreaseAmount: 5,
-            reservoirIncreaseInterval: 1000, // must be divisible by 250
-            reservoirIncreaseMaximum: 70,
-        });
-
-        const allTasks = dataArray.map((product) => {
+        const mutations = dataArray.map((product) => {
             let template = templValueHandler(
                 templateValue,
                 shopName,
@@ -67,25 +36,14 @@ async function processProductsArray(shop, accessToken, dataArray, templateValue,
             
                 `;
 
-            return limiter
-                .schedule(() => {
-                    return prepareAndUpdateProduct(shop, accessToken, itemMutation);
-                })
-                .then((data) => {
-                    // // console.log("\n\n data >", data);
-                    // console.log("\n\n\n\n\n\n\n\n\n data >", data?.data);
-                    // console.log(itemMutation);
-                    // console.log("throttleStatus >", data?.data?.extensions?.cost?.throttleStatus);
-                    // console.log("actualQueryCost >", data?.data?.extensions?.cost?.actualQueryCost);
-                })
-                .catch((err) => console.log("ProcessData.Limiter.sechedul.catch.erro : ", err));
+            return itemMutation;
         });
 
-        await Promise.all(allTasks);
+        const processedProducts = await botlneckMutations(shop, accessToken, mutations);
 
-        return limiter.done();
+        return processedProducts;
     } catch (err) {
-        console.log("Something went wrong, ", err.message);
+        console.log("Error ", err);
         return err;
     }
 }
@@ -93,7 +51,6 @@ async function processProductsArray(shop, accessToken, dataArray, templateValue,
 const processFile = (jsonlFilePath) => {
     let res = [];
     let countImgs = 0;
-
     return new Promise((resolve, reject) => {
         const readInterface = readline.createInterface({
             input: fs.createReadStream(jsonlFilePath),
@@ -157,51 +114,6 @@ const processFile = (jsonlFilePath) => {
         });
     });
 };
-
-function processHookPayload(payload) {
-    let shop = payload?.domain;
-    let topic = payload?.topic;
-    let product = payload?.payload;
-    let images = product?.images;
-
-    if (!shop || !topic || !images.length > 0) return;
-
-    let templateValue = ""; // comes from the db
-    let mutationQuery = []; /**The mutation query to update img that have been modified */
-    let shopName; // comes from the db
-
-    images.forEach((img) => {
-        let alt = templateValue.replace(/\[shop_name\]/gi, shopName);
-        alt = alt.replace(/\[product_title\]/gi, product.title);
-        alt = alt.replace(/\[product_vendor\]/g, product.vendor);
-        alt = alt.replace(/\[product_type\]/gi, product.productType);
-        alt = alt.replace(/\[product_handle\]/gi, product.handle);
-        alt = alt.substring(0, 490);
-        alt = alt.replace(/[^\w\s:\.,]/gi, "");
-
-        if (img.alt !== alt) {
-            const productId = "gid://shopify/Product/5933007110304";
-            const imgId = "gid://shopify/ProductImage/21121933901984";
-
-            const query = `
-                mutation ($productId: ${productId}, $image: { id: "${imgId}", alt: "${alt}"} ) {
-                    mutation productImageUpdate($productId: ID!, $image: ImageInput!) {
-                        productImageUpdate(productId: $productId, image: $image) {
-                        image {
-                            id
-                        }
-                        userErrors {
-                            field
-                            message
-                        }
-                        }
-                    }
-                }
-            
-            `;
-        }
-    });
-}
 
 module.exports = {
     processFile,

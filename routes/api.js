@@ -14,13 +14,13 @@ const router = new Router();
 router.post("/api", verifyRequest(), async (ctx) => {
     ctx.response.status = 200;
 
-    let productsProcessed = null;
+    let numProductProcessed = null;
+    let numImgsProcessed = null;
     let operationStatus = 1;
     let jsonlFilePath = null;
     let templateValue = null;
     let shopId = null;
     let shop = null;
-    let imgsProcessed = null;
 
     try {
         /**
@@ -48,11 +48,9 @@ router.post("/api", verifyRequest(), async (ctx) => {
         const jsonlURL = await getBulkData.bulkStatusQuery(shop, accessToken);
 
         jsonlFilePath = await getBulkData.downloadJSONL(jsonlURL);
-        const processedData = await processData.processFile(jsonlFilePath);
-        imgsProcessed = processedData.countImgs;
-        productsArray = processedData.productsArray;
-
-        productsProcessed = await processData.processProductsArray(
+        let [productsArray, countImgs] = await processData.processFile(jsonlFilePath);
+        numImgsProcessed = countImgs;
+        numProductProcessed = await processData.processProductsArray(
             shop,
             accessToken,
             productsArray,
@@ -60,7 +58,7 @@ router.post("/api", verifyRequest(), async (ctx) => {
             shopName
         );
 
-        console.log(shop, ": Done 😉, status data ➡️ " + statusData);
+        console.log(shop, ": Done 😉, status data ➡️ " + numProductProcessed);
     } catch (err) {
         ctx.response.status = 400;
         console.log("Error ", err);
@@ -69,7 +67,10 @@ router.post("/api", verifyRequest(), async (ctx) => {
         try {
             ctx.response.body =
                 operationStatus == 1
-                    ? { error: false, message: `We've updated ${productsProcessed}` }
+                    ? {
+                          error: false,
+                          message: `We've updated ${numImgsProcessed} Images from ${numProductProcessed} Products`,
+                      }
                     : { error: true, message: "Something wennt wrong, please try again!" };
 
             // REMOVING THE JSONL FILE IF IT EXISTS

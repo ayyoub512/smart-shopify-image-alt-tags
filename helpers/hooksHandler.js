@@ -37,7 +37,6 @@ async function productUpdated(payload, isUpdated = true) {
 
         const shopId = foundShop.id;
         const statusData = await status.getLastStatus(shopId);
-        console.log(util.inspect(statusData, { showHidden: false, depth: null }));
 
         if (!statusData || !statusData?.templateValue) {
             console.log("This shop no data whatsoever an is new, so just ignore it for now!");
@@ -76,9 +75,9 @@ async function productUpdated(payload, isUpdated = true) {
         if (!toUpdate) return null; // if not just return
 
         // Write the logic the update the alt tag for the images here...
-        console.log("Updating Product id: :: ", productId);
-        const data = await botlneckMutations(shopOrigin, accessToken, mutations);
-        console.log("[+] All mutations are done, result . ", data);
+        // console.log("Updating Product id: :: ", productId);
+        // const data = await botlneckMutations(shopOrigin, accessToken, mutations);
+        // console.log("[+] All mutations are done, result . ", data);
     } catch (err) {
         console.log("Something went wrong while handline the webhook: ", err);
     }
