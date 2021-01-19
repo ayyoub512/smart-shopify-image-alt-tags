@@ -2,7 +2,6 @@ const Router = require("@koa/router");
 const { verifyRequest } = require("@shopify/koa-shopify-auth");
 
 const fs = require("fs");
-var jwt = require("jsonwebtoken");
 
 const shops = require("../db/shops");
 const status = require("../db/status");
@@ -17,6 +16,11 @@ router.post("/api", verifyRequest(), async (ctx) => {
 
     let productsProcessed = null;
     let operationStatus = 1;
+    let jsonlFilePath = null;
+    let templateValue = null;
+    let shopId = null;
+    let shop = null;
+    let imgsProcessed = null;
 
     try {
         /**
@@ -25,9 +29,9 @@ router.post("/api", verifyRequest(), async (ctx) => {
         console.log("[+] Received your request");
 
         let operationStatus = 1;
-
-        const { shop, accessToken } = ctx.session;
-        const templateValue = ctx.request.body?.templateValue;
+        const accessToken = ctx.session.accessToken;
+        shop = ctx.session.shop;
+        templateValue = ctx.request.body?.templateValue;
 
         if (!templateValue || !shop || !accessToken) {
             console.log("400 Bad Request");
@@ -38,13 +42,17 @@ router.post("/api", verifyRequest(), async (ctx) => {
         const shopData = await shops.findShopByName(shop);
 
         const shopName = shopData.shopName;
-        const shopId = shopData.id;
+        shopId = shopData.id;
 
         await getBulkData.initBulkRequest(shop, accessToken);
         const jsonlURL = await getBulkData.bulkStatusQuery(shop, accessToken);
-        const jsonlFilePath = await getBulkData.downloadJSONL(jsonlURL);
-        const [productsArray, countImgs] = await processData.processFile(jsonlFilePath);
-        const updatedProductsCount = await processData.processProductsArray(
+
+        jsonlFilePath = await getBulkData.downloadJSONL(jsonlURL);
+        const processedData = await processData.processFile(jsonlFilePath);
+        imgsProcessed = processedData.countImgs;
+        productsArray = processedData.productsArray;
+
+        productsProcessed = await processData.processProductsArray(
             shop,
             accessToken,
             productsArray,
@@ -52,17 +60,39 @@ router.post("/api", verifyRequest(), async (ctx) => {
             shopName
         );
 
-        productsProcessed = updatedProductsCount;
-        console.log(shop, ": Done 😉");
+        console.log(shop, ": Done 😉, status data ➡️ " + statusData);
     } catch (err) {
         ctx.response.status = 400;
         console.log("Error ", err);
         operationStatus = -1;
     } finally {
-        ctx.response.body =
-            operationStatus == 1
-                ? { error: false, message: `We've updated ${productsProcessed}` }
-                : { error: true, message: "Something wennt wrong, please try again!" };
+        try {
+            ctx.response.body =
+                operationStatus == 1
+                    ? { error: false, message: `We've updated ${productsProcessed}` }
+                    : { error: true, message: "Something wennt wrong, please try again!" };
+
+            // REMOVING THE JSONL FILE IF IT EXISTS
+            if (fs.existsSync(jsonlFilePath)) {
+                //file exists, let remove it.
+                fs.unlinkSync(jsonlFilePath); //
+            }
+
+            // UPDATE THE DATABASE WITH THE CURRENT ALT VALUE
+            // const statusData = await status.setStatus(
+            //     shopId,
+            //     operationStatus,
+            //     templateValue,
+            //     productsProcessed,
+            //     imgsProcessed
+            // );
+
+            // const util = require("util");
+            // console.log("Updated!!");
+            // console.log(util.inspect(statusData, { showHidden: false, depth: null }));
+        } catch (err) {
+            console.error("Something went wrong while removing the file " + jsonlFilePath + " \n\n", err);
+        }
     }
 });
 

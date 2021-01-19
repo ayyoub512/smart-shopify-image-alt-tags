@@ -1,8 +1,11 @@
 const readline = require("readline");
 const fs = require("fs");
-const mutations = require("../db/myMutations");
+
 const axios = require("axios");
 const Bottleneck = require("bottleneck");
+
+const mutations = require("../db/myMutations");
+const { templValueHandler } = require("./generalFuncs");
 
 async function prepareAndUpdateProduct(shop, accessToken, mutation) {
     try {
@@ -34,13 +37,14 @@ async function processProductsArray(shop, accessToken, dataArray, templateValue,
         });
 
         const allTasks = dataArray.map((product) => {
-            let template = templateValue.replace(/\[shop_name\]/gi, shopName);
-            template = template.replace(/\[product_title\]/gi, product.title);
-            template = template.replace(/\[product_vendor\]/g, product.vendor);
-            template = template.replace(/\[product_type\]/gi, product.productType);
-            template = template.replace(/\[product_handle\]/gi, product.handle);
-            template = template.substring(0, 490);
-            template = template.replace(/[^\w\s:\.,]/gi, "");
+            let template = templValueHandler(
+                templateValue,
+                shopName,
+                product.title,
+                product.vendor,
+                product.productType,
+                product.handle
+            );
 
             const itemMutation =
                 `mutation {

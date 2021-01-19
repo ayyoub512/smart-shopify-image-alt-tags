@@ -13,7 +13,7 @@ module.exports = {
         });
     },
 
-    setStatus: function (shopId, status, templateValue, productsProcessed, imgsProcessed) {
+    setStatus: function (shopId, status, templateValue = null, productsProcessed = null, imgsProcessed = null) {
         let query =
             "INSERT INTO status SET shopId = ?, status= ?, templateValue = ?, productsProcessed = ?, imgsProcessed = ? ";
         return new Promise(function (resolve, reject) {
