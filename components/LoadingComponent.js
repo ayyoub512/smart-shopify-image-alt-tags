@@ -1,24 +1,61 @@
 import { Loading } from "@shopify/app-bridge-react";
-import { Card, Page, SkeletonBodyText, SkeletonDisplayText, Spinner } from "@shopify/polaris";
+import { Card, SkeletonPage, SkeletonBodyText, Layout } from "@shopify/polaris";
 
 /**
  * @description Provides a loading component
  */
-const LoadingComponent = ({ processing }) => {
+const LoadingComponent = () => {
     return (
-        <Page>
+        <SkeletonPage title='Optimization Results' primaryAction secondaryActions={2}>
             <Loading />
-            <SkeletonDisplayText size='medium' />
-            <SkeletonBodyText />
-            <SkeletonDisplayText size='small' />
-            {/* <Card title='Please wait...' sectioned>
-                <center>We're processing your request...</center> <br />
-                <center>
-                    <Spinner accessibilityLabel='Small spinner example' size='small' color='teal' />
-                </center>
-            </Card> */}
-        </Page>
+            <Layout>
+                <Layout.Section>
+                    <Card sectioned>
+                        <SkeletonBodyText />
+                        <SkeletonBodyText />
+                    </Card>
+                </Layout.Section>
+
+                <Layout.Section oneHalf>
+                    <Card sectioned>
+                        <SkeletonBodyText />
+                        <SkeletonBodyText />
+                    </Card>
+                </Layout.Section>
+
+                <Layout.Section oneHalf>
+                    <Card sectioned title='Change Alt Template'>
+                        <SkeletonBodyText />
+                        <SkeletonBodyText />
+                        <SkeletonBodyText />
+                        <SkeletonBodyText />
+                        <SkeletonBodyText />
+                    </Card>
+                </Layout.Section>
+            </Layout>
+        </SkeletonPage>
     );
 };
+
+{
+    /* <Card title='Sales channels'>
+                        <Card.Section>
+                            <SkeletonBodyText lines={2} />
+                        </Card.Section>
+                        <Card.Section>
+                            <SkeletonBodyText lines={1} />
+                        </Card.Section>
+                    </Card> */
+}
+{
+    /* <Card title='Organization' subdued>
+                        <Card.Section>
+                            <SkeletonBodyText lines={2} />
+                        </Card.Section>
+                        <Card.Section>
+                            <SkeletonBodyText lines={2} />
+                        </Card.Section>
+                    </Card> */
+}
 
 export default LoadingComponent;

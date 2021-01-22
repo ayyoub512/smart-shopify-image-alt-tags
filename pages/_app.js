@@ -38,7 +38,7 @@ class MyApp extends App {
                 </Head>
                 <Provider config={config}>
                     <ClientRouter />
-                    <AppProvider i18n={translations}>
+                    <AppProvider newDesignLanguage={true} i18n={translations}>
                         <ApolloProvider client={client}>
                             <Component {...pageProps} />
                         </ApolloProvider>

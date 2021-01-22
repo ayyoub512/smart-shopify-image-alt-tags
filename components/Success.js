@@ -8,7 +8,7 @@ import React from "react";
 
 import axios from "axios";
 
-import { Page, Banner, TextStyle } from "@shopify/polaris";
+import { Page, Layout, Banner, Badge, Card, FormLayout, TextField, TextContainer, Heading } from "@shopify/polaris";
 import LoadingComponent from "./LoadingComponent";
 
 class Success extends React.Component {
@@ -22,24 +22,47 @@ class Success extends React.Component {
     }
 
     render() {
-        if (this.state.isLoading) return <LoadingComponent />;
+        if (!this.state.isLoading)
+            return (
+                <Page title='Optimazation Report' titleMetadata={<Badge status='success'>Optimized</Badge>}>
+                    <Layout>
+                        <Layout.Section>
+                            <Banner
+                                title='All products images on your store are optimized'
+                                action={{ content: "Review US", onAction: () => console.log("Clicked") }}
+                                status='success'
+                            >
+                                <p>From now on, Every image you add will be optimized imediatlly as well</p>
+                            </Banner>
+                        </Layout.Section>
 
-        return (
-            <Page>
-                <Banner
-                    title={`${this.state.data.imgsProcessed} Images Have been Optimized!`}
-                    action={{ content: "Review US", onAction: () => console.log("Clicked") }}
-                    status='positive'
-                >
-                    <TextStyle variation='positive'>
-                        {this.state.data.imgsProcessed} images were optimized, from
-                        {this.state.data.productsProcessed} products, templateValue is: {this.state.data.templateValue}
-                    </TextStyle>
+                        <TextContainer>
+                            <Heading></Heading>
+                            <p>
+                                Shopify POS is the easiest way to sell your products in person. Available for iPad,
+                                iPhone, and Android.
+                            </p>
+                        </TextContainer>
 
-                    <p>We'll keep an eye out for new images and optimize them the moment you added them! </p>
-                </Banner>
-            </Page>
-        );
+                        <Layout.AnnotatedSection
+                            title='Alt Template Settings'
+                            description='Want to update your alt template value for all your exisiting images and newly added ones?'
+                        >
+                            <Card sectioned secondaryFooterActions={[{ content: "Edit Alt Template" }]}>
+                                <FormLayout>
+                                    <TextField
+                                        disabled
+                                        label='Current alt template value'
+                                        value='[shop_name] - [product_handle] - [product_name]'
+                                    />
+                                </FormLayout>
+                            </Card>
+                        </Layout.AnnotatedSection>
+                    </Layout>
+                </Page>
+            );
+
+        return <LoadingComponent data={this.state.data} />;
     }
 
     componentDidMount() {
