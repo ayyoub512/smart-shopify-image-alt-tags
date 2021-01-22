@@ -5,20 +5,18 @@
  import React, { Component } from 'react'
  */
 
-import { Page, Banner, TextStyle, Link } from '@shopify/polaris';
+import { Page, Banner, TextStyle, Link } from "@shopify/polaris";
 
-const ErrorsHandler = (props) => {
+const ErrorsHandler = ({ message }) => {
     return (
         <Page>
             <Banner
-                title="Something isn't right!"
-                action={{ content: 'Contact us', onAction: () => console.log('Clicked') }}
-                secondaryAction={{ content: 'Re-authenticate & Refrech' }}
+                title='ERROR'
+                action={{ content: "Contact us", onAction: () => console.log("Clicked") }}
+                secondaryAction={{ content: "Re-authenticate & Refrech" }}
                 status='critical'
             >
-                <TextStyle variation='negative'>
-                    We don't know how to say it, but something went wrong :(
-                </TextStyle>
+                <TextStyle variation='negative'>{message}</TextStyle>
 
                 <p>
                     Try to

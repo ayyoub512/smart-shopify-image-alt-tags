@@ -5,7 +5,6 @@ const util = require("util");
 
 const axios = require("axios");
 const Bottleneck = require("bottleneck");
-const { Console } = require("console");
 
 exports.templValueHandler = function (value, shopName, title, vendor, productType, handle) {
     let template = value.replace(/\[shop_name\]/gi, shopName);
@@ -41,15 +40,14 @@ exports.botlneckMutations = async function (shopOrigin, accessToken, mutations) 
         });
 
         let AllMutations = mutations.map((itemMutation) => {
-            console.log("Item Mutaiton");
             return limiter
                 .schedule(() => {
                     return prepareMutations(shopOrigin, accessToken, itemMutation);
                 })
                 .then((resp) => {
                     // console.log(util.inspect(data.data, { showHidden: false, depth: null }));
-                    console.log("Currently Avai");
-                    console.log(resp?.data?.extensions?.cost?.throttleStatus?.currentlyAvailable);
+                    // console.log("Currently Avai");
+                    console.log("Mutation ", resp?.data?.extensions?.cost?.throttleStatus?.currentlyAvailable);
                 })
                 .catch((err) => console.log("erro : ", err));
         });

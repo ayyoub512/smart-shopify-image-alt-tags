@@ -21,19 +21,21 @@ class Index extends React.Component {
             status: props.status,
             shopName: props.shopName,
             isError: props.isError,
-            imgsProcessed: props.imgsProcessed,
-            productsProcessed: props.productsProcessed,
+            templateValue: props.templateValue,
         };
     }
 
     render() {
         if (!this.state.isError && this.state.status == 0)
-            return <AltTextForm product={this.state.product} shopName={this.state.shopName} />;
-        else if (this.state.status == 2) return <Working />;
-        else if (this.state.status == 1)
             return (
-                <Success imgsProcessed={this.state.imgsProcessed} productsProcessed={this.state.productsProcessed} />
+                <AltTextForm
+                    product={this.state.product}
+                    templateValue={this.state.templateValue}
+                    shopName={this.state.shopName}
+                />
             );
+        else if (this.state.status == 2) return <Working />;
+        else if (this.state.status == 1) return <Success />;
         else return <ErrorsHandler />;
     }
 }
@@ -51,8 +53,6 @@ export async function getServerSideProps(ctx) {
     let isError = false;
     let templateValue;
     let operationStatus = 0; // by default status = 0, first time.
-    let productsProcessed;
-    let imgsProcessed;
 
     try {
         if (!shop) throw new Error("Something went wrong");
@@ -68,13 +68,14 @@ export async function getServerSideProps(ctx) {
 
         const statusData = await status.getLastStatus(shopId);
         operationStatus = statusData?.status ?? 0;
+        templateValue = statusData?.templateValue;
 
-        if (statusData) {
-            templateValue = statusData.templateValue ?? " ";
-            productsProcessed = statusData.productsProcessed;
-            imgsProcessed = statusData.imgsProcessed;
-        }
-        /// When status code = 0, means first time
+        // if (statusData) {
+        //     productsProcessed = statusData.productsProcessed;
+        //     imgsProcessed = statusData.imgsProcessed;
+        // }
+
+        /// When status code = 0, means first time (Not nessairyl)
         if (operationStatus == 0) {
             const url = "https://" + shop + "/admin/api/2021-01/graphql.json";
 
@@ -137,8 +138,6 @@ export async function getServerSideProps(ctx) {
             templateValue: templateValue ?? null,
             status: operationStatus,
             isError,
-            productsProcessed: productsProcessed ?? 0,
-            imgsProcessed: imgsProcessed ?? 0,
         },
     };
 }

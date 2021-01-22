@@ -2,6 +2,7 @@ const Router = require("@koa/router");
 const { verifyRequest } = require("@shopify/koa-shopify-auth");
 
 const fs = require("fs");
+const util = require("util");
 
 const shops = require("../db/shops");
 const status = require("../db/status");
@@ -11,8 +12,9 @@ const processData = require("../helpers/processData");
 
 const router = new Router();
 
-router.post("/api", verifyRequest(), async (ctx) => {
-    ctx.response.status = 200;
+router.post("/api/init", verifyRequest(), async (ctx) => {
+    // set timeout to 20 minutes
+    ctx.request.socket.setTimeout(20 * 60 * 1000);
 
     let numProductProcessed = null;
     let numImgsProcessed = null;
@@ -23,26 +25,28 @@ router.post("/api", verifyRequest(), async (ctx) => {
     let shop = null;
 
     try {
-        /**
-         * No need to to do anything since we are using verifyRequest();
-         */
-        console.log("[+] Received your request");
+        ctx.assert(ctx.request.body?.templateValue, 401, "Template was found");
+        ctx.assert(ctx.session.shop, 401, "Auth token not found, please re-authenticate");
+        ctx.assert(ctx.session.accessToken, 401, "Auth token not found, please re-authenticate");
 
-        let operationStatus = 1;
-        const accessToken = ctx.session.accessToken;
         shop = ctx.session.shop;
+        const accessToken = ctx.session.accessToken;
         templateValue = ctx.request.body?.templateValue;
 
-        if (!templateValue || !shop || !accessToken) {
-            console.log("400 Bad Request");
-            throw new Error("400 Bad Request");
-        }
-        console.log(" > Starting operation for ", shop);
+        let operationStatus = 1;
+        console.log("[+] Starting operation for ", shop);
 
         const shopData = await shops.findShopByName(shop);
-
         const shopName = shopData.shopName;
         shopId = shopData.id;
+        operationStatus = 2;
+
+        try {
+            await status.setStatus(shopId, operationStatus, templateValue);
+            console.log("> shopId: ", shopId, "status set to 2");
+        } catch (err) {
+            console.log("Something went wrong while updating the status, details: " + err);
+        }
 
         await getBulkData.initBulkRequest(shop, accessToken);
         const jsonlURL = await getBulkData.bulkStatusQuery(shop, accessToken);
@@ -58,20 +62,26 @@ router.post("/api", verifyRequest(), async (ctx) => {
             shopName
         );
 
-        console.log(shop, ": Done 😉, status data ➡️ " + numProductProcessed);
+        operationStatus = 1;
+        console.log(shop, "Mutation done, productsProcessed: ➡️ " + numProductProcessed);
+        ctx.response.status = 200;
     } catch (err) {
         ctx.response.status = 400;
         console.log("Error ", err);
         operationStatus = -1;
     } finally {
         try {
-            ctx.response.body =
+            ctx.set("Content-Type", "application/json");
+            ctx.body =
                 operationStatus == 1
                     ? {
                           error: false,
-                          message: `We've updated ${numImgsProcessed} Images from ${numProductProcessed} Products`,
+                          data: {
+                              updatedImgs: numImgsProcessed,
+                              updatedProducts: numProductProcessed,
+                          },
                       }
-                    : { error: true, message: "Something wennt wrong, please try again!" };
+                    : { error: true, message: "Something went wrong, please try again!" };
 
             // REMOVING THE JSONL FILE IF IT EXISTS
             if (fs.existsSync(jsonlFilePath)) {
@@ -80,75 +90,53 @@ router.post("/api", verifyRequest(), async (ctx) => {
             }
 
             // UPDATE THE DATABASE WITH THE CURRENT ALT VALUE
-            // const statusData = await status.setStatus(
-            //     shopId,
-            //     operationStatus,
-            //     templateValue,
-            //     productsProcessed,
-            //     imgsProcessed
-            // );
+            if (operationStatus && shopId && templateValue) {
+                const updatedStatus = await status.setStatus(
+                    shopId,
+                    operationStatus,
+                    templateValue,
+                    numProductProcessed,
+                    numImgsProcessed
+                );
 
-            // const util = require("util");
-            // console.log("Updated!!");
-            // console.log(util.inspect(statusData, { showHidden: false, depth: null }));
+                console.log("Updated!!");
+                console.log(util.inspect(updatedStatus, { showHidden: false, depth: null }));
+            }
         } catch (err) {
             console.error("Something went wrong while removing the file " + jsonlFilePath + " \n\n", err);
         }
     }
 });
 
+router.post("/api/status", verifyRequest(), async (ctx) => {
+    let error = false;
+    let data;
+
+    try {
+        // ctx.assert(ctx.request.body?.templateValue, 401, "Template was found");
+        ctx.assert(ctx.session.shop, 401, "Auth token not found, please re-authenticate");
+        ctx.assert(ctx.session.accessToken, 401, "Auth token not found, please re-authenticate");
+
+        const shop = ctx.session.shop;
+
+        const shopData = await shops.findShopByName(shop);
+        data = await status.getLastStatus(shopData.id);
+        // console.log(statusData);
+        // data = statusData?.statusData;
+
+        ctx.response.status = 200;
+    } catch (err) {
+        console.log(err);
+        error = true;
+        ctx.response.status = 400;
+    } finally {
+        const payload = {
+            error,
+            data,
+        };
+
+        ctx.response.body = payload;
+    }
+});
+
 module.exports = { apiRouter: router };
-
-/**
- * 
- * 
- * 
- * 
- *
-//     .then((data) => {
-//         let [productsArray, countImgs] = data;
-//         imgsProcessed = countImgs;
-//         console.log("Counted, ", countImgs);
-//         productsProcessed = productsArray.length;
-
-//         return processData.processProductsArray(shop, accessToken, productsArray, templateValue, shopName);
-//     })
-
-//     .then((completedMutationsCount) => {
-//         // Lets update the status table with the recent value!
-//         // res.json({ msg: "Bad request, Please re-authenticate!", error: true });
-//         operationStatus = 1;
-//     })
-
-//     .catch((err) => {
-//         console.log(err);
-//         operationStatus = -1;
-//         reject(err);
-//     })
-
-//     .finally(async () => {
-//         productsProcessed;
-//         imgsProcessed;
-//         try {
-//             if (shopId) {
-//                 await status.setStatus(
-//                     shopId,
-//                     operationStatus,
-//                     templateValue,
-//                     productsProcessed,
-//                     imgsProcessed
-//                 );
-//             }
-
-//             // DELETING THE FILE
-//             if (jsonlFilePath) await fs.unlinkSync(jsonlFilePath);
-//         } catch (err) {
-//             console.log(err);
-//         }
-//     });
-/**
- *
- *
- *
- *
- */
