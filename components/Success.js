@@ -5,11 +5,11 @@
  */
 
 import React from "react";
-
 import axios from "axios";
 
 import { Page, Layout, Banner, Badge, Card, FormLayout, TextField, TextContainer, Heading } from "@shopify/polaris";
 import LoadingComponent from "./LoadingComponent";
+import FAQs from "./FAQs";
 
 class Success extends React.Component {
     constructor(props) {
@@ -36,14 +36,6 @@ class Success extends React.Component {
                             </Banner>
                         </Layout.Section>
 
-                        <TextContainer>
-                            <Heading></Heading>
-                            <p>
-                                Shopify POS is the easiest way to sell your products in person. Available for iPad,
-                                iPhone, and Android.
-                            </p>
-                        </TextContainer>
-
                         <Layout.AnnotatedSection
                             title='Alt Template Settings'
                             description='Want to update your alt template value for all your exisiting images and newly added ones?'
@@ -58,6 +50,13 @@ class Success extends React.Component {
                                 </FormLayout>
                             </Card>
                         </Layout.AnnotatedSection>
+
+                        <Layout.Section>
+                            <Heading>FAQs</Heading>
+
+                            <br />
+                            <FAQs />
+                        </Layout.Section>
                     </Layout>
                 </Page>
             );
