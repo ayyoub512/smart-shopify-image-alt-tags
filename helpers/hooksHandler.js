@@ -9,7 +9,6 @@
  *      alt values (First time user runs the app,
  *      and happend the UPDATE/CREATE a product )
  *
- *
  */
 
 const util = require("util");
