@@ -17,10 +17,11 @@ const { apiRouter } = require("./routes/api");
 const { registerWebhook } = require("@shopify/koa-shopify-webhooks");
 
 const path = require("path");
-const mysql = require("mysql");
+const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 
 const getSubscriptionUrl = require("./server/getSubscriptionUrl");
+const { Shop } = require("./models/shopModel");
 
 dotenv.config();
 const { default: graphQLProxy } = require("@shopify/koa-shopify-graphql-proxy");
@@ -38,124 +39,126 @@ global.appRoot = path.resolve(__dirname);
 /**
  * Connecting to the database
  * */
-const shopModel = require("./db/shops");
-const { Console } = require("console");
+// const shopModel = require("./db/shops");
+mongoose
+    .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then((e) => {
+        console.log("\n\n[+] DB Connected");
 
-var dbConn = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-});
+        /**
+         * https://github.com/devwiz73/shopify-app-boilerplate/blob/master/server.js
+         * app.context is the prototype from which ctx is created.
+         * You may add additional properties to ctx by editing app.context.
+         */
 
-dbConn.connect(function (err) {
-    if (err) throw err;
-    console.log("> Connected to mysql server");
-});
-global.db = dbConn;
+        const { SHOPIFY_API_SECRET_KEY, SHOPIFY_API_KEY, HOST } = process.env;
+        console.log("SERVER.JS: HOST", HOST);
 
-/**
- * https://github.com/devwiz73/shopify-app-boilerplate/blob/master/server.js
- * app.context is the prototype from which ctx is created.
- * You may add additional properties to ctx by editing app.context.
- */
+        app.prepare().then(() => {
+            const server = new Koa();
+            const router = new Router();
 
-const { SHOPIFY_API_SECRET_KEY, SHOPIFY_API_KEY, HOST } = process.env;
-console.log("SERVER.JS: HOST", HOST);
+            server.use(session({ secure: true, sameSite: "none" }, server));
+            server.keys = [SHOPIFY_API_SECRET_KEY];
 
-app.prepare().then(() => {
-    const server = new Koa();
-    const router = new Router();
+            server.use(
+                createShopifyAuth({
+                    apiKey: SHOPIFY_API_KEY,
+                    secret: SHOPIFY_API_SECRET_KEY,
+                    scopes: ["read_products", "write_products", "read_assigned_fulfillment_orders", "read_orders"],
+                    async afterAuth(ctx) {
+                        const { shop: shopOrigin, accessToken } = ctx.session;
 
-    server.context.db = dbConn;
-    server.use(session({ secure: true, sameSite: "none" }, server));
-    server.keys = [SHOPIFY_API_SECRET_KEY];
+                        console.log("Shop and token", shopOrigin, accessToken);
 
-    server.use(
-        createShopifyAuth({
-            apiKey: SHOPIFY_API_KEY,
-            secret: SHOPIFY_API_SECRET_KEY,
-            scopes: ["read_products", "write_products", "read_assigned_fulfillment_orders", "read_orders"],
-            async afterAuth(ctx) {
-                const { shop, accessToken } = ctx.session;
+                        // shopModel.addShop(shop, accessToken);
+                        try {
+                            // const shop = new Shop({
+                            //     shopOrigin,
+                            //     accessToken,
+                            // });
 
-                console.log("Shop and token", shop, accessToken);
+                            const updateResp = await Shop.findOneAndUpdate(
+                                { shopOrigin },
+                                { shopOrigin, accessToken },
+                                { upsert: true }
+                            );
 
-                shopModel.addShop(shop, accessToken);
+                            console.log(updateResp);
+                            // await shop.save();
+                        } catch (err) {
+                            console.log("[+] Something went wrong while saving ", shopOrigin, "\n\n", err);
+                        }
+                        // const token = jwt.sign({ shopOrigin: shop }, process.env.JWT_SECRET);
+                        // ctx.cookies.set("alt-text-app", token, {
+                        //     httpOnly: true,
+                        //     secure: true,
+                        //     sameSite: "none",
+                        // });
 
-                const token = jwt.sign({ shopOrigin: shop }, process.env.JWT_SECRET);
+                        ctx.cookies.set("shopOrigin", shopOrigin, {
+                            httpOnly: false,
+                            secure: true,
+                            sameSite: "none",
+                        });
 
-                // ctx.cookies.set("alt-text-app", token, {
-                //     httpOnly: true,
-                //     secure: true,
-                //     sameSite: "none",
-                // });
+                        const productCreateRegis = await registerWebhook({
+                            address: `${HOST}/webhooks/products/create`,
+                            topic: "PRODUCTS_CREATE",
+                            accessToken,
+                            shopOrigin,
+                            apiVersion: ApiVersion.October19,
+                        });
+                        const productUpdateRegis = await registerWebhook({
+                            address: `${HOST}/webhooks/products/update`,
+                            topic: "PRODUCTS_UPDATE",
+                            accessToken,
+                            shopOrigin,
+                            apiVersion: ApiVersion.October19,
+                        });
 
-                ctx.cookies.set("shopOrigin", shop, {
-                    httpOnly: false,
-                    secure: true,
-                    sameSite: "none",
-                });
+                        if (productCreateRegis.success) console.log("Successfully registered PRODUCTS_CREATE webhook!");
+                        else console.log("Failed to register webhook PRODUCTS_CREATE", productCreateRegis.result);
 
-                const productCreateRegis = await registerWebhook({
-                    address: `${HOST}/webhooks/products/create`,
-                    topic: "PRODUCTS_CREATE",
-                    accessToken,
-                    shop,
-                    apiVersion: ApiVersion.October19,
-                });
-                const productUpdateRegis = await registerWebhook({
-                    address: `${HOST}/webhooks/products/update`,
-                    topic: "PRODUCTS_UPDATE",
-                    accessToken,
-                    shop,
-                    apiVersion: ApiVersion.October19,
-                });
+                        if (productUpdateRegis.success) console.log("Successfully registered PRODUCTS_CREATE webhook!");
+                        else console.log("Failed to register webhook PRODUCTS_CREATE", productUpdateRegis.result);
 
-                if (productCreateRegis.success) {
-                    console.log("Successfully registered PRODUCTS_CREATE webhook!");
-                } else {
-                    console.log("Failed to register webhook PRODUCTS_CREATE", productCreateRegis.result);
-                }
+                        const isPremium = true;
+                        if (!isPremium) {
+                            // Billing API
+                            const subscriptionUrl = await getSubscriptionUrl(accessToken, shopOrigin);
+                            console.log(subscriptionUrl);
+                            ctx.redirect(subscriptionUrl);
+                        }
 
-                if (productUpdateRegis.success) {
-                    console.log("Successfully registered PRODUCTS_CREATE webhook!");
-                } else {
-                    console.log("Failed to register webhook PRODUCTS_CREATE", productUpdateRegis.result);
-                }
+                        ctx.redirect(`/?shop=${shop}`);
+                    },
+                })
+            ); /** END OF CUSTOM MILDDLWARE */
 
-                const isPremium = true;
-                if (!isPremium) {
-                    // Billing API
-                    const subscriptionUrl = await getSubscriptionUrl(accessToken, shop);
-                    console.log(subscriptionUrl);
-                    ctx.redirect(subscriptionUrl);
-                }
+            server.use(bodyParser()); // Use the body parser before anything else so we can access ctx.request.body
+            server.use(hooksRouter.routes());
+            server.use(hooksRouter.allowedMethods());
+            server.use(apiRouter.routes());
+            server.use(apiRouter.allowedMethods());
 
-                ctx.redirect(`/?shop=${shop}`);
-            },
-        })
-    ); /** END OF CUSTOM MILDDLWARE */
+            server.use(graphQLProxy({ version: ApiVersion.October19 }));
 
-    server.use(bodyParser()); // Use the body parser before anything else so we can access ctx.request.body
-    server.use(hooksRouter.routes());
-    server.use(hooksRouter.allowedMethods());
-    server.use(apiRouter.routes());
-    server.use(apiRouter.allowedMethods());
+            router.get("(.*)", verifyRequest(), async (ctx) => {
+                await handle(ctx.req, ctx.res);
 
-    server.use(graphQLProxy({ version: ApiVersion.October19 }));
+                ctx.respond = false;
+                ctx.res.statusCode = 200;
+            });
 
-    router.get("(.*)", verifyRequest(), async (ctx) => {
-        await handle(ctx.req, ctx.res);
+            server.use(router.routes());
+            server.use(router.allowedMethods());
 
-        ctx.respond = false;
-        ctx.res.statusCode = 200;
+            server.listen(port, () => {
+                console.log(`> Ready on https://localhost:${port}`);
+            });
+        });
+    })
+    .catch((e) => {
+        console.log("\n\n[-]Error connected to db: ", e);
     });
-
-    server.use(router.routes());
-    server.use(router.allowedMethods());
-
-    server.listen(port, () => {
-        console.log(`> Ready on https://localhost:${port}`);
-    });
-});
