@@ -37,7 +37,6 @@ const shopSchema = mongoose.Schema(
 );
 
 const Shop = mongoose.model("Shop", shopSchema);
-
 // export default Shop;
 
 module.exports = { Shop };

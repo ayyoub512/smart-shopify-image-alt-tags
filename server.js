@@ -35,13 +35,14 @@ const handle = app.getRequestHandler();
 
 /** DEFININE OUR GOLABAL PATH */
 global.appRoot = path.resolve(__dirname);
+global.Shop = Shop;
 
 /**
  * Connecting to the database
  * */
 // const shopModel = require("./db/shops");
 mongoose
-    .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false })
     .then((e) => {
         console.log("\n\n[+] DB Connected");
 
@@ -84,7 +85,7 @@ mongoose
                                 { upsert: true }
                             );
 
-                            console.log(updateResp);
+                            console.log("The updated shop:", updateResp);
                             // await shop.save();
                         } catch (err) {
                             console.log("[+] Something went wrong while saving ", shopOrigin, "\n\n", err);
@@ -96,42 +97,45 @@ mongoose
                         //     sameSite: "none",
                         // });
 
+                        console.log("The shop is: ", shopOrigin);
+                        console.log("The token is: ", accessToken);
+
                         ctx.cookies.set("shopOrigin", shopOrigin, {
                             httpOnly: false,
                             secure: true,
                             sameSite: "none",
                         });
 
-                        const productCreateRegis = await registerWebhook({
-                            address: `${HOST}/webhooks/products/create`,
-                            topic: "PRODUCTS_CREATE",
-                            accessToken,
-                            shopOrigin,
-                            apiVersion: ApiVersion.October19,
-                        });
-                        const productUpdateRegis = await registerWebhook({
-                            address: `${HOST}/webhooks/products/update`,
-                            topic: "PRODUCTS_UPDATE",
-                            accessToken,
-                            shopOrigin,
-                            apiVersion: ApiVersion.October19,
-                        });
+                        // const productCreateRegis = await registerWebhook({
+                        //     address: `${HOST}/webhooks/products/create`,
+                        //     topic: "PRODUCTS_CREATE",
+                        //     accessToken,
+                        //     shopOrigin,
+                        //     apiVersion: ApiVersion.October19,
+                        // });
+                        // const productUpdateRegis = await registerWebhook({
+                        //     address: `${HOST}/webhooks/products/update`,
+                        //     topic: "PRODUCTS_UPDATE",
+                        //     accessToken,
+                        //     shopOrigin,
+                        //     apiVersion: ApiVersion.October19,
+                        // });
 
-                        if (productCreateRegis.success) console.log("Successfully registered PRODUCTS_CREATE webhook!");
-                        else console.log("Failed to register webhook PRODUCTS_CREATE", productCreateRegis.result);
+                        // if (productCreateRegis.success) console.log("Successfully registered PRODUCTS_CREATE webhook!");
+                        // else console.log("Failed to register webhook PRODUCTS_CREATE", productCreateRegis.result);
 
-                        if (productUpdateRegis.success) console.log("Successfully registered PRODUCTS_CREATE webhook!");
-                        else console.log("Failed to register webhook PRODUCTS_CREATE", productUpdateRegis.result);
+                        // if (productUpdateRegis.success) console.log("Successfully registered PRODUCTS_CREATE webhook!");
+                        // else console.log("Failed to register webhook PRODUCTS_CREATE", productUpdateRegis.result);
 
-                        const isPremium = true;
-                        if (!isPremium) {
-                            // Billing API
-                            const subscriptionUrl = await getSubscriptionUrl(accessToken, shopOrigin);
-                            console.log(subscriptionUrl);
-                            ctx.redirect(subscriptionUrl);
-                        }
+                        // const isPremium = true;
+                        // if (!isPremium) {
+                        //     // Billing API
+                        //     const subscriptionUrl = await getSubscriptionUrl(accessToken, shopOrigin);
+                        //     console.log(subscriptionUrl);
+                        //     ctx.redirect(subscriptionUrl);
+                        // }
 
-                        ctx.redirect(`/?shop=${shop}`);
+                        ctx.redirect(`/?shop=${shopOrigin}`);
                     },
                 })
             ); /** END OF CUSTOM MILDDLWARE */

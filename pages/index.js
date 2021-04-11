@@ -1,8 +1,10 @@
 import React from "react";
 import axios from "axios";
 
-import shops from "../db/shops";
-import status from "../db/status";
+// import shops from "../db/shops";
+// const { Shop } = require("../models/shopModel");
+// import { Shop } from "../models/shopModel";
+// import status from "../db/status";
 
 import { randomNumber } from "../helpers/randomNum";
 
@@ -37,6 +39,7 @@ class Index extends React.Component {
         else if (this.state.status == 2) return <Working />;
         else if (this.state.status == 1) return <Success />;
         else return <ErrorsHandler />;
+        return <ErrorsHandler />;
     }
 }
 
@@ -60,72 +63,77 @@ export async function getServerSideProps(ctx) {
         /**
          * @fsd means findShopData
          */
-        const findShopData = await shops.findShopByName(shop);
-        const fsd_email = findShopData.email;
-        const fsd_contactEmail = findShopData.contactEmail;
-        const accessToken = findShopData.accessToken;
-        const shopId = findShopData.id;
 
-        const statusData = await status.getLastStatus(shopId);
-        operationStatus = statusData?.status ?? 0;
-        templateValue = statusData?.templateValue;
+        const findShopData = await global.Shop.findOne({ shopOrigin: shop });
+        console.log(findShopData);
+        if (false) {
+            // const findShopData = await shops.findShopByName(shop);
+            const fsd_email = findShopData.email;
+            const fsd_contactEmail = findShopData.contactEmail;
+            const accessToken = findShopData.accessToken;
+            const shopId = findShopData.id;
 
-        // if (statusData) {
-        //     productsProcessed = statusData.productsProcessed;
-        //     imgsProcessed = statusData.imgsProcessed;
-        // }
+            const statusData = await status.getLastStatus(shopId);
+            operationStatus = statusData?.status ?? 0;
+            templateValue = statusData?.templateValue;
 
-        /// When status code = 0, means first time (Not nessairyl)
-        if (operationStatus == 0) {
-            const url = "https://" + shop + "/admin/api/2021-01/graphql.json";
+            // if (statusData) {
+            //     productsProcessed = statusData.productsProcessed;
+            //     imgsProcessed = statusData.imgsProcessed;
+            // }
 
-            const result = await axios({
-                url: url,
-                method: "post",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-Shopify-Access-Token": accessToken,
-                },
-                data: {
-                    query: GET_IMGS_QUERY,
-                },
-            });
+            /// When status code = 0, means first time (Not nessairyl)
+            if (operationStatus == 0) {
+                const url = "https://" + shop + "/admin/api/2021-01/graphql.json";
 
-            /** OPTIONAL CHAINING ?.
-             * : https://javascript.info/optional-chaining
-             */
-            const nodes = result?.data?.data?.products?.edges;
-
-            if (nodes) {
-                const email = result.data.data?.shop?.email;
-                const contactEmail = result.data.data?.shop?.contactEmail;
-                shopName = result.data.data?.shop?.name;
-
-                /** INSERTING/UPDATING THE EMAIL ADDRESSES, contactEmail: is the support email */
-                if (email !== fsd_email || contactEmail !== fsd_contactEmail)
-                    await shops.updateFields(shop, email, contactEmail, shopName);
-
-                const products = nodes.map((product) => {
-                    const title = product.node.title.toString();
-                    const handle = product.node.handle.toString();
-                    const vendor = product.node.vendor.toString();
-                    const productType = product.node.productType.toString();
-                    const featuredImgSrc = product.node?.featuredImage?.originalSrc;
-
-                    if (title && handle && featuredImgSrc && (vendor || productType)) {
-                        return product;
-                    }
+                const result = await axios({
+                    url: url,
+                    method: "post",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Shopify-Access-Token": accessToken,
+                    },
+                    data: {
+                        query: GET_IMGS_QUERY,
+                    },
                 });
 
-                // TODO: pick up one product
-                if (products.length > 0) {
-                    // Pick a random object
-                    const index = randomNumber(0, products.length - 1);
+                /** OPTIONAL CHAINING ?.
+                 * : https://javascript.info/optional-chaining
+                 */
+                const nodes = result?.data?.data?.products?.edges;
 
-                    product = products[index];
+                if (nodes) {
+                    const email = result.data.data?.shop?.email;
+                    const contactEmail = result.data.data?.shop?.contactEmail;
+                    shopName = result.data.data?.shop?.name;
+
+                    /** INSERTING/UPDATING THE EMAIL ADDRESSES, contactEmail: is the support email */
+                    if (email !== fsd_email || contactEmail !== fsd_contactEmail)
+                        await shops.updateFields(shop, email, contactEmail, shopName);
+
+                    const products = nodes.map((product) => {
+                        const title = product.node.title.toString();
+                        const handle = product.node.handle.toString();
+                        const vendor = product.node.vendor.toString();
+                        const productType = product.node.productType.toString();
+                        const featuredImgSrc = product.node?.featuredImage?.originalSrc;
+
+                        if (title && handle && featuredImgSrc && (vendor || productType)) {
+                            return product;
+                        }
+                    });
+
+                    // TODO: pick up one product
+                    if (products.length > 0) {
+                        // Pick a random object
+                        const index = randomNumber(0, products.length - 1);
+
+                        product = products[index];
+                    }
                 }
-            }
-        } // end of if status == 0
+            } // end of if status == 0
+        }
     } catch (err) {
         console.log(err);
         isError = true;
@@ -136,7 +144,7 @@ export async function getServerSideProps(ctx) {
             product: product ?? {},
             shopName: "",
             templateValue: templateValue ?? null,
-            status: operationStatus,
+            status: operationStatus ?? 0,
             isError,
         },
     };
