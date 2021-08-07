@@ -24,6 +24,8 @@ router.post("/api/init", verifyRequest(), async (ctx) => {
     let shopId = null;
     let shop = null;
 
+    console.log("I am here");
+
     try {
         ctx.assert(ctx.request.body?.templateValue, 401, "Template was found");
         ctx.assert(ctx.session.shop, 401, "Auth token not found, please re-authenticate");
@@ -38,12 +40,12 @@ router.post("/api/init", verifyRequest(), async (ctx) => {
 
         const shopData = await shops.findShopByName(shop);
         const shopName = shopData.shopName;
-        shopId = shopData.id;
+        // shopId = shopData.id;
         operationStatus = 2;
 
         try {
-            await status.setStatus(shopId, operationStatus, templateValue);
-            console.log("> shopId: ", shopId, "status set to 2");
+            await status.setStatus(shop, operationStatus, templateValue);
+            console.log("> shopOrigin ", shop, "status set to 2");
         } catch (err) {
             console.log("Something went wrong while updating the status, details: " + err);
         }
@@ -54,13 +56,7 @@ router.post("/api/init", verifyRequest(), async (ctx) => {
         jsonlFilePath = await getBulkData.downloadJSONL(jsonlURL);
         let [productsArray, countImgs] = await processData.processFile(jsonlFilePath);
         numImgsProcessed = countImgs;
-        numProductProcessed = await processData.processProductsArray(
-            shop,
-            accessToken,
-            productsArray,
-            templateValue,
-            shopName
-        );
+        numProductProcessed = await processData.processProductsArray(shop, accessToken, productsArray, templateValue, shopName);
 
         operationStatus = 1;
         console.log(shop, "Mutation done, productsProcessed: ➡️ " + numProductProcessed);
@@ -90,14 +86,8 @@ router.post("/api/init", verifyRequest(), async (ctx) => {
             }
 
             // UPDATE THE DATABASE WITH THE CURRENT ALT VALUE
-            if (operationStatus && shopId && templateValue) {
-                const updatedStatus = await status.setStatus(
-                    shopId,
-                    operationStatus,
-                    templateValue,
-                    numProductProcessed,
-                    numImgsProcessed
-                );
+            if (operationStatus && shop && templateValue) {
+                const updatedStatus = await status.setStatus(shop, operationStatus, templateValue, numProductProcessed, numImgsProcessed);
 
                 console.log("Updated!!");
                 console.log(util.inspect(updatedStatus, { showHidden: false, depth: null }));
@@ -120,7 +110,7 @@ router.post("/api/status", verifyRequest(), async (ctx) => {
         const shop = ctx.session.shop;
 
         const shopData = await shops.findShopByName(shop);
-        data = await status.getLastStatus(shopData.id);
+        data = await status.getLastStatus(shopData.shopOrigin);
         // console.log(statusData);
         // data = statusData?.statusData;
 

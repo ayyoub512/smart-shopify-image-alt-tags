@@ -16,18 +16,16 @@ const shopSchema = mongoose.Schema(
 
         supportEmail: String,
 
-        status: [
+        statuses: [
             {
                 status: {
                     type: Number,
                     default: 0,
                 },
-
                 templateValue: {
                     type: String,
                     default: "[hiho]",
                 },
-
                 productsProcessed: Number,
                 imgsProcessed: Number,
             },

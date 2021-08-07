@@ -35,7 +35,7 @@ async function productUpdated(payload, isUpdated = true) {
         }
 
         const shopId = foundShop.id;
-        const statusData = await status.getLastStatus(shopId);
+        const statusData = await status.getLastStatus(shopOrigin);
 
         if (!statusData || !statusData?.templateValue) {
             console.log("This shop no data whatsoever an is new, so just ignore it for now!");
@@ -107,8 +107,7 @@ const product = {
     payload: {
         id: 5933007536288,
         title: "Update Me",
-        body_html:
-            "<p>Womans zipped leather jacket. Adjustable belt for a comfortable fit, complete with shoulder pads and front zip pocket.</p>",
+        body_html: "<p>Womans zipped leather jacket. Adjustable belt for a comfortable fit, complete with shoulder pads and front zip pocket.</p>",
         vendor: "Liam Fashions",
         product_type: "",
         created_at: "2020-12-18T09:32:17-05:00",
@@ -309,8 +308,7 @@ const product = {
                 alt: "dd",
                 width: 925,
                 height: 617,
-                src:
-                    "https://cdn.shopify.com/s/files/1/0521/6046/3008/products/leather-jacket-and-tea_925x_e917107c-d13e-4260-91a6-0ed33f12e7e1.jpg?v=1611087956",
+                src: "https://cdn.shopify.com/s/files/1/0521/6046/3008/products/leather-jacket-and-tea_925x_e917107c-d13e-4260-91a6-0ed33f12e7e1.jpg?v=1611087956",
                 variant_ids: [],
                 admin_graphql_api_id: "gid://shopify/ProductImage/20771196141728",
             },
@@ -323,8 +321,7 @@ const product = {
                 alt: "Classic Leather Jacket   ",
                 width: 800,
                 height: 800,
-                src:
-                    "https://cdn.shopify.com/s/files/1/0521/6046/3008/products/hmm1_29106cc3-b794-46a9-a86c-cbbc3661d516.jpg?v=1611004633",
+                src: "https://cdn.shopify.com/s/files/1/0521/6046/3008/products/hmm1_29106cc3-b794-46a9-a86c-cbbc3661d516.jpg?v=1611004633",
                 variant_ids: [37496428200096],
                 admin_graphql_api_id: "gid://shopify/ProductImage/21051097809056",
             },
@@ -337,8 +334,7 @@ const product = {
                 alt: "Classic Leather Jacket   ",
                 width: 800,
                 height: 800,
-                src:
-                    "https://cdn.shopify.com/s/files/1/0521/6046/3008/products/among-us-plush-3_4ebf85c3-7ce0-41ca-b7da-2c722f624ac6.jpg?v=1611004633",
+                src: "https://cdn.shopify.com/s/files/1/0521/6046/3008/products/among-us-plush-3_4ebf85c3-7ce0-41ca-b7da-2c722f624ac6.jpg?v=1611004633",
                 variant_ids: [],
                 admin_graphql_api_id: "gid://shopify/ProductImage/21051098693792",
             },
@@ -351,8 +347,7 @@ const product = {
                 alt: "Classic Leather Jacket   ",
                 width: 800,
                 height: 800,
-                src:
-                    "https://cdn.shopify.com/s/files/1/0521/6046/3008/products/among-us-plush-4_7c757bc2-a9fe-4fd2-ab32-ecf8c33b0646.jpg?v=1611004633",
+                src: "https://cdn.shopify.com/s/files/1/0521/6046/3008/products/among-us-plush-4_7c757bc2-a9fe-4fd2-ab32-ecf8c33b0646.jpg?v=1611004633",
                 variant_ids: [],
                 admin_graphql_api_id: "gid://shopify/ProductImage/21051098562720",
             },
@@ -366,8 +361,7 @@ const product = {
             alt: "dd",
             width: 925,
             height: 617,
-            src:
-                "https://cdn.shopify.com/s/files/1/0521/6046/3008/products/leather-jacket-and-tea_925x_e917107c-d13e-4260-91a6-0ed33f12e7e1.jpg?v=1611087956",
+            src: "https://cdn.shopify.com/s/files/1/0521/6046/3008/products/leather-jacket-and-tea_925x_e917107c-d13e-4260-91a6-0ed33f12e7e1.jpg?v=1611087956",
             variant_ids: [],
             admin_graphql_api_id: "gid://shopify/ProductImage/20771196141728",
         },

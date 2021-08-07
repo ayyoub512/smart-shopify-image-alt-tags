@@ -44,7 +44,7 @@ global.Shop = Shop;
 mongoose
     .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false })
     .then((e) => {
-        console.log("\n\n[+] DB Connected");
+        console.log("\n\n[+] Connected to DB : " + process.env.MONGO_URI);
 
         /**
          * https://github.com/devwiz73/shopify-app-boilerplate/blob/master/server.js
@@ -70,25 +70,16 @@ mongoose
                     async afterAuth(ctx) {
                         const { shop: shopOrigin, accessToken } = ctx.session;
 
-                        console.log("Shop and token", shopOrigin, accessToken);
-
-                        // shopModel.addShop(shop, accessToken);
                         try {
-                            // const shop = new Shop({
-                            //     shopOrigin,
-                            //     accessToken,
-                            // });
-
-                            const updateResp = await Shop.findOneAndUpdate(
-                                { shopOrigin },
-                                { shopOrigin, accessToken },
-                                { upsert: true }
-                            );
-
-                            console.log("The updated shop:", updateResp);
-                            // await shop.save();
+                            await Shop.findOneAndUpdate({ shopOrigin }, { shopOrigin, accessToken }, { upsert: true });
+                            ctx.cookies.set("shopOrigin", shopOrigin, {
+                                httpOnly: false,
+                                secure: true,
+                                sameSite: "none",
+                            });
+                            ctx.redirect(`/?shop=${shopOrigin}`);
                         } catch (err) {
-                            console.log("[+] Something went wrong while saving ", shopOrigin, "\n\n", err);
+                            console.log("[+] Something went wrong while saving/updating ", shopOrigin, "\n\n", err);
                         }
                         // const token = jwt.sign({ shopOrigin: shop }, process.env.JWT_SECRET);
                         // ctx.cookies.set("alt-text-app", token, {
@@ -96,15 +87,6 @@ mongoose
                         //     secure: true,
                         //     sameSite: "none",
                         // });
-
-                        console.log("The shop is: ", shopOrigin);
-                        console.log("The token is: ", accessToken);
-
-                        ctx.cookies.set("shopOrigin", shopOrigin, {
-                            httpOnly: false,
-                            secure: true,
-                            sameSite: "none",
-                        });
 
                         // const productCreateRegis = await registerWebhook({
                         //     address: `${HOST}/webhooks/products/create`,
@@ -134,8 +116,6 @@ mongoose
                         //     console.log(subscriptionUrl);
                         //     ctx.redirect(subscriptionUrl);
                         // }
-
-                        ctx.redirect(`/?shop=${shopOrigin}`);
                     },
                 })
             ); /** END OF CUSTOM MILDDLWARE */
@@ -164,5 +144,5 @@ mongoose
         });
     })
     .catch((e) => {
-        console.log("\n\n[-]Error connected to db: ", e);
+        console.log("\n\n[-]Error while connecting to DB: ", e);
     });
