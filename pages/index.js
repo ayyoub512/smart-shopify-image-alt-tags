@@ -1,10 +1,10 @@
 import React from "react";
 import axios from "axios";
 
-// import shops from "../db/shops";
 // const { Shop } = require("../models/shopModel");
 // import { Shop } from "../models/shopModel";
-// import status from "../db/status";
+import shops from "../db/shops";
+import status from "../db/status";
 
 import { randomNumber } from "../helpers/randomNum";
 
@@ -24,20 +24,14 @@ class Index extends React.Component {
             shopName: props.shopName,
             isError: props.isError,
             templateValue: props.templateValue,
+            lastStatusData: JSON.parse(props.lastStatusData),
         };
     }
 
     render() {
-        if (!this.state.isError && this.state.status == 0)
-            return (
-                <AltTextForm
-                    product={this.state.product}
-                    templateValue={this.state.templateValue}
-                    shopName={this.state.shopName}
-                />
-            );
+        if (!this.state.isError && this.state.status == 0) return <AltTextForm product={this.state.product} templateValue={this.state.templateValue} shopName={this.state.shopName} />;
         else if (this.state.status == 2) return <Working />;
-        else if (this.state.status == 1) return <Success />;
+        else if (this.state.status == 1) return <Success lastStatusData={this.state.lastStatusData} />;
         else return <ErrorsHandler />;
         return <ErrorsHandler />;
     }
@@ -54,6 +48,7 @@ export async function getServerSideProps(ctx) {
     let product; // gets retreived from the db later
     let shopName; // gets retreived from the db later
     let isError = false;
+    let lastStatusData; // holds the last status data, and potentially the past data as well,
     let templateValue;
     let operationStatus = 0; // by default status = 0, first time.
 
@@ -66,74 +61,65 @@ export async function getServerSideProps(ctx) {
 
         const findShopData = await global.Shop.findOne({ shopOrigin: shop });
         console.log(findShopData);
-        if (false) {
-            // const findShopData = await shops.findShopByName(shop);
-            const fsd_email = findShopData.email;
-            const fsd_contactEmail = findShopData.contactEmail;
-            const accessToken = findShopData.accessToken;
-            const shopId = findShopData.id;
+        // const findShopData = await shops.findShopByName(shop);
+        const fsd_email = findShopData.email;
+        const fsd_contactEmail = findShopData.contactEmail;
+        const accessToken = findShopData.accessToken;
 
-            const statusData = await status.getLastStatus(shopId);
-            operationStatus = statusData?.status ?? 0;
-            templateValue = statusData?.templateValue;
+        lastStatusData = await status.getLastStatus(shop);
+        operationStatus = lastStatusData?.status ?? 0;
+        templateValue = lastStatusData?.templateValue;
 
-            // if (statusData) {
-            //     productsProcessed = statusData.productsProcessed;
-            //     imgsProcessed = statusData.imgsProcessed;
-            // }
+        /// When status code = 0, means first time (Not nessairyl)
+        if (operationStatus == 0) {
+            const url = "https://" + shop + "/admin/api/2021-01/graphql.json";
 
-            /// When status code = 0, means first time (Not nessairyl)
-            if (operationStatus == 0) {
-                const url = "https://" + shop + "/admin/api/2021-01/graphql.json";
+            const result = await axios({
+                url: url,
+                method: "post",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Shopify-Access-Token": accessToken,
+                },
+                data: {
+                    query: GET_IMGS_QUERY,
+                },
+            });
 
-                const result = await axios({
-                    url: url,
-                    method: "post",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-Shopify-Access-Token": accessToken,
-                    },
-                    data: {
-                        query: GET_IMGS_QUERY,
-                    },
+            /** OPTIONAL CHAINING ?.
+             * : https://javascript.info/optional-chaining
+             */
+            const nodes = result?.data?.data?.products?.edges;
+
+            if (nodes) {
+                const email = result.data.data?.shop?.email;
+                const contactEmail = result.data.data?.shop?.contactEmail;
+                shopName = result.data.data?.shop?.name;
+
+                /** INSERTING/UPDATING THE EMAIL ADDRESSES, contactEmail: is the support email */
+                if (email !== fsd_email || contactEmail !== fsd_contactEmail) await shops.updateShop(shop, { email, supportEmail: contactEmail, shopName });
+
+                const products = nodes.map((product) => {
+                    const title = product.node.title.toString();
+                    const handle = product.node.handle.toString();
+                    const vendor = product.node.vendor.toString();
+                    const productType = product.node.productType.toString();
+                    const featuredImgSrc = product.node?.featuredImage?.originalSrc;
+
+                    if (title && handle && featuredImgSrc && (vendor || productType)) {
+                        return product;
+                    }
                 });
 
-                /** OPTIONAL CHAINING ?.
-                 * : https://javascript.info/optional-chaining
-                 */
-                const nodes = result?.data?.data?.products?.edges;
+                // TODO: pick up one product
+                if (products.length > 0) {
+                    // Pick a random object
+                    const index = randomNumber(0, products.length - 1);
 
-                if (nodes) {
-                    const email = result.data.data?.shop?.email;
-                    const contactEmail = result.data.data?.shop?.contactEmail;
-                    shopName = result.data.data?.shop?.name;
-
-                    /** INSERTING/UPDATING THE EMAIL ADDRESSES, contactEmail: is the support email */
-                    if (email !== fsd_email || contactEmail !== fsd_contactEmail)
-                        await shops.updateFields(shop, email, contactEmail, shopName);
-
-                    const products = nodes.map((product) => {
-                        const title = product.node.title.toString();
-                        const handle = product.node.handle.toString();
-                        const vendor = product.node.vendor.toString();
-                        const productType = product.node.productType.toString();
-                        const featuredImgSrc = product.node?.featuredImage?.originalSrc;
-
-                        if (title && handle && featuredImgSrc && (vendor || productType)) {
-                            return product;
-                        }
-                    });
-
-                    // TODO: pick up one product
-                    if (products.length > 0) {
-                        // Pick a random object
-                        const index = randomNumber(0, products.length - 1);
-
-                        product = products[index];
-                    }
+                    product = products[index];
                 }
-            } // end of if status == 0
-        }
+            }
+        } // end of if status == 0
     } catch (err) {
         console.log(err);
         isError = true;
@@ -143,6 +129,7 @@ export async function getServerSideProps(ctx) {
         props: {
             product: product ?? {},
             shopName: "",
+            lastStatusData: JSON.stringify(lastStatusData) ?? null,
             templateValue: templateValue ?? null,
             status: operationStatus ?? 0,
             isError,

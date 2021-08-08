@@ -4,8 +4,8 @@
  * product value is the same as the templateValue stored
  * the database;
  *
- * @todo:
- * 1 - handle in case we don't have any stored current
+ * @params
+ * 1 : handle in case we don't have any stored current
  *      alt values (First time user runs the app,
  *      and happend the UPDATE/CREATE a product )
  *

@@ -17,7 +17,7 @@ class Success extends React.Component {
 
         this.state = {
             isLoading: false,
-            data: {}, // gets returned from the server
+            lastStatusData: props.lastStatusData, // gets returned from the server
         };
     }
 
@@ -28,25 +28,28 @@ class Success extends React.Component {
                     <Layout>
                         <Layout.Section>
                             <Banner
-                                title='All products images on your store are optimized'
+                                title={`You've just optimized ${this.state.lastStatusData.imgsProcessed} images from ${this.state.lastStatusData.productsProcessed} products 😎`}
                                 action={{ content: "Review US", onAction: () => console.log("Clicked") }}
                                 status='success'
                             >
-                                <p>From now on, Every image you add will be optimized imediatlly as well</p>
+                                <p>We'll keep an eye out for new images and optimize them the moment they get uploaded</p>
                             </Banner>
                         </Layout.Section>
 
-                        <Layout.AnnotatedSection
-                            title='Alt Template Settings'
-                            description='Want to update your alt template value for all your exisiting images and newly added ones?'
-                        >
-                            <Card sectioned secondaryFooterActions={[{ content: "Edit Alt Template" }]}>
+                        <Layout.AnnotatedSection title='Alt Template Settings' description='Want to update your alt template value for all your exisiting images and newly added ones?'>
+                            <Card
+                                sectioned
+                                secondaryFooterActions={[
+                                    {
+                                        content: "Edit the ALT rule",
+                                        onAction: () => {
+                                            alert("We're working on this feature");
+                                        },
+                                    },
+                                ]}
+                            >
                                 <FormLayout>
-                                    <TextField
-                                        disabled
-                                        label='Current alt template value'
-                                        value='[shop_name] - [product_handle] - [product_name]'
-                                    />
+                                    <TextField disabled label='Current alt template value' value={this.state.lastStatusData.templateValue} />
                                 </FormLayout>
                             </Card>
                         </Layout.AnnotatedSection>

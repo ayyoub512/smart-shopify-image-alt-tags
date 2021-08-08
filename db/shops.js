@@ -1,15 +1,10 @@
-const mysql = require("mysql");
-const basefunc = require("../libs/basefunc");
-const mongoose = require("mongoose");
-const shopModel = require("../models/shopModel");
-
 module.exports = {
     addShop: function (shop, accessToken) {
         this.findShopByName(shop).then((shopData) => {
             return new Promise(function (resolve, reject) {
                 // let query = "INSERT INTO shops SET ?";
                 if (shopData) {
-                    this.updateShop(shop, accessToken);
+                    this.updateShop(shop, { accessToken });
                     return reject("Something went wrong, probably failed to update the shop");
                 }
                 shopData = {
@@ -51,15 +46,21 @@ module.exports = {
         });
     },
 
-    // Updates the shop to the new accessToken
-    updateShop: function (shop, accessToken) {
+    // Updates the shop to the new given data
+    /**
+     *
+     * @param {String} shopToUpdate the shopOrigin
+     * @param {Array} data to update
+     * @returns the updated shop data, or error, or null
+     */
+    updateShop: function (shopToUpdate, data) {
         return new Promise(function (resolve, reject) {
             // let query = "UPDATE shops SET accessToken = ? WHERE shopOrigin = ?";
             // db.query(query, [accessToken, shop], function (err, result) {
             //     if (err) return reject(err);
             //     return resolve(result);
             // });
-            Shop.findOneAndUpdate({ shopOrigin: shop }, { accessToken }, (err, updatedShop) => {
+            Shop.findOneAndUpdate({ shopOrigin: shopToUpdate }, data, (err, updatedShop) => {
                 console.log("updatedShop value, ", updatedShop);
                 console.log("Returned Error, ", err);
                 if (err) return reject(err);
@@ -76,26 +77,34 @@ module.exports = {
      * @param {*} contactEmail the business email for customer ex support[at]domain[dot]com
      * @param {*} shopName the shop name ex: Araby Code Shop
      */
-    updateFields: function (shop, email, contactEmail, shopName) {
-        typeof email == "undefined" ? (email = null) : email;
-        typeof contactEmail == "undefined" ? (contactEmail = null) : contactEmail;
-        typeof shopName == "undefined" ? (shopName = null) : shopName;
+    // updateFields: function (shop, email, supportEmail, shopName) {
+    //     typeof email == "undefined" ? (email = null) : email;
+    //     typeof supportEmail == "undefined" ? (supportEmail = null) : supportEmail;
+    //     typeof shopName == "undefined" ? (shopName = null) : shopName;
 
-        let query =
-            `UPDATE shops SET email = ` +
-            mysql.escape(email) +
-            `, contactEmail = ` +
-            mysql.escape(contactEmail) +
-            `, shopName = ` +
-            mysql.escape(shopName) +
-            `WHERE shopOrigin = ` +
-            mysql.escape(shop);
+    //     return new Promise(function (resolve, reject) {
+    //         Shop.findOneAndUpdate({ shopOrigin: shop }, { accessToken, email, supportEmail, shopName}, (err, updatedShop) => {
+    //             console.log("updatedShop value, ", updatedShop);
+    //             console.log("Returned Error, ", err);
+    //             if (err) return reject(err);
+    //             if (updatedShop) return resolve(updatedShop);
+    //             else return resolve(null);
+    //         });
 
-        return new Promise(function (resolve, reject) {
-            db.query(query, function (err, result) {
-                if (err) return reject(err);
-                return resolve(result);
-            });
-        });
-    },
+    // let query =
+    //     `UPDATE shops SET email = ` +
+    //     mysql.escape(email) +
+    //     `, contactEmail = ` +
+    //     mysql.escape(contactEmail) +
+    //     `, shopName = ` +
+    //     mysql.escape(shopName) +
+    //     `WHERE shopOrigin = ` +
+    //         mysql.escape(shop);
+
+    // db.query(quer`y, function (err, result) {
+    //     if (err) return reject(err);
+    //     return resolve(result);
+    // });
+    // });
+    // },
 };

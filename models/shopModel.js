@@ -12,6 +12,8 @@ const shopSchema = mongoose.Schema(
             required: true,
         },
 
+        shopName: String,
+
         email: String,
 
         supportEmail: String,
