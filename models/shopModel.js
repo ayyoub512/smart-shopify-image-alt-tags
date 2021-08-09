@@ -20,11 +20,19 @@ const shopSchema = mongoose.Schema(
 
         statuses: [
             {
+                /**
+                 * FIRST_TIME : The very first run
+                 * IN_PROGRESS : last run in still in progress
+                 * SUCCEEDED : last run succeeded
+                 * FAILED : last run failed
+                 * NEW_FIRST_TIME : when the customer wants to change the alt value and rerun the operation,
+                 *     and probably will also do this for failed operations
+                 */
                 status: {
-                    type: Number,
-                    default: 0,
+                    type: String,
+                    default: "FIRST_TIME",
                 },
-                templateValue: {
+                altFormula: {
                     type: String,
                     default: "[hiho]",
                 },

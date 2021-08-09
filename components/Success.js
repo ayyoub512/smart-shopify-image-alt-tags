@@ -41,7 +41,7 @@ class Success extends React.Component {
                                 sectioned
                                 secondaryFooterActions={[
                                     {
-                                        content: "Edit the ALT rule",
+                                        content: "Edit the ALT Formula",
                                         onAction: () => {
                                             alert("We're working on this feature");
                                         },
@@ -49,7 +49,7 @@ class Success extends React.Component {
                                 ]}
                             >
                                 <FormLayout>
-                                    <TextField disabled label='Current alt template value' value={this.state.lastStatusData.templateValue} />
+                                    <TextField disabled label='Current alt template value' value={this.state.lastStatusData.altFormula} />
                                 </FormLayout>
                             </Card>
                         </Layout.AnnotatedSection>

@@ -6,7 +6,7 @@ import Working from "./Working";
 import Success from "./Success";
 import ErrorsHandler from "./ErrorsHandler";
 import LoadingComponent from "./LoadingComponent";
-
+import { operationStatus as opStatus } from "../helpers/staticVars";
 /**
  * The Template Form
  */
@@ -20,20 +20,20 @@ class AltTextForm extends React.Component {
         const productType = props.product?.node?.productType;
         const productTitle = props.product?.node?.title;
         const vendor = props.product?.node?.vendor;
-        const templateValue = props.templateValue;
+        const altFormula = props.altFormula;
+        const lastOperationStatus = props.lastOperationStatus;
 
         this.state = {
-            value: templateValue ?? "[product_title] [product_type]  - " + shopName, // template value
+            altFormula: altFormula ?? "[product_title] [product_type]  - " + shopName,
             imgSrc,
             handle,
             productType,
             productTitle,
             vendor,
             shopName: props.shopName,
-            // you're here that means You'be been redirected, so the status is natually 0 to show the form
-            operationStatus: 0,
+            lastOperationStatus,
             isLoading: false,
-            data: {}, // gets returned from the server
+            lastStatusData: {}, // gets returned from the server
         };
 
         this.handleChange = this.handleChange.bind(this);
@@ -42,9 +42,9 @@ class AltTextForm extends React.Component {
 
     render() {
         if (this.state.isLoading) return <Working />;
-        else if (this.state.operationStatus == 2) return <Working />;
-        else if (this.state.operationStatus == 1) return <Success data={this.state.data} />;
-        else if (this.state.operationStatus == -1) return <ErrorsHandler />;
+        else if (this.state.lastOperationStatus == opStatus.IN_PROGRESS) return <Working />;
+        else if (this.state.lastOperationStatus == opStatus.SUCCEEDED) return <Success lastStatusData={this.state.lastStatusData} />;
+        else if (this.state.lastOperationStatus == opStatus.FAILED) return <ErrorsHandler />;
         else
             return (
                 <Page title='Alt Value Setup'>
@@ -52,28 +52,19 @@ class AltTextForm extends React.Component {
                     <Layout>
                         <Layout.Section oneHalf>
                             <Card sectioned>
-                                <img
-                                    src={
-                                        this.state.imgSrc ??
-                                        "https://cdn.shopify.com/s/files/1/0757/9955/files/empty-state.svg"
-                                    }
-                                    style={{ maxWidth: "100%", maxHeight: "100%" }}
-                                />
+                                <img src={this.state.imgSrc ?? "https://cdn.shopify.com/s/files/1/0757/9955/files/empty-state.svg"} style={{ maxWidth: "100%", maxHeight: "100%" }} />
                             </Card>
                         </Layout.Section>
                         <Layout.Section oneHalf>
-                            <Card
-                                title='Set an image alt text template'
-                                primaryFooterAction={{ content: "Optimize Now", onAction: this.handleSubmit }}
-                            >
+                            <Card title='Set the alt formula' primaryFooterAction={{ content: "Optimize Now", onAction: this.handleSubmit }}>
                                 <Card.Section>
                                     <TextField
-                                        label='Alt text template'
-                                        value={this.state.value}
+                                        label='Alt Formula'
+                                        value={this.state.altFormula}
                                         onChange={this.handleChange}
-                                        placeholder='Alt text value'
+                                        placeholder='Alt Formulas'
                                         clearButton
-                                        onClearButtonClick={() => this.setState({ value: "" })}
+                                        onClearButtonClick={() => this.setState({ altFormula: "" })}
                                     />
                                 </Card.Section>
                                 <Card.Section subdued>
@@ -83,14 +74,12 @@ class AltTextForm extends React.Component {
                                         <Stack>
                                             <Tag
                                                 onClick={(e) => {
-                                                    let newValue = this.state.value.trim();
+                                                    let newAltFormula = this.state.altFormula.trim();
 
-                                                    newValue
-                                                        ? (newValue += " [product_title] ")
-                                                        : (newValue = "[product_title] ");
+                                                    newAltFormula ? (newAltFormula += " [product_title] ") : (newAltFormula = "[product_title] ");
 
                                                     this.setState({
-                                                        value: newValue,
+                                                        altFormula: newAltFormula,
                                                     });
                                                 }}
                                             >
@@ -99,14 +88,12 @@ class AltTextForm extends React.Component {
 
                                             <Tag
                                                 onClick={(e) => {
-                                                    let newValue = this.state.value.trim();
+                                                    let newAltFormula = this.state.altFormula.trim();
 
-                                                    newValue
-                                                        ? (newValue += " [shop_name] ")
-                                                        : (newValue = "[shop_name] ");
+                                                    newAltFormula ? (newAltFormula += " [shop_name] ") : (newAltFormula = "[shop_name] ");
 
                                                     this.setState({
-                                                        value: newValue,
+                                                        altFormula: newAltFormula,
                                                     });
                                                 }}
                                             >
@@ -115,14 +102,12 @@ class AltTextForm extends React.Component {
 
                                             <Tag
                                                 onClick={(e) => {
-                                                    let newValue = this.state.value.trim();
+                                                    let newAltFormula = this.state.altFormula.trim();
 
-                                                    newValue
-                                                        ? (newValue += " [product_vendor] ")
-                                                        : (newValue = "[product_vendor] ");
+                                                    newAltFormula ? (newAltFormula += " [product_vendor] ") : (newAltFormula = "[product_vendor] ");
 
                                                     this.setState({
-                                                        value: newValue,
+                                                        altFormula: newAltFormula,
                                                     });
                                                 }}
                                             >
@@ -131,14 +116,12 @@ class AltTextForm extends React.Component {
 
                                             <Tag
                                                 onClick={(e) => {
-                                                    let newValue = this.state.value.trim();
+                                                    let newAltFormula = this.state.altFormula.trim();
 
-                                                    newValue
-                                                        ? (newValue += " [product_type] ")
-                                                        : (newValue = "[product_type] ");
+                                                    newAltFormula ? (newAltFormula += " [product_type] ") : (newAltFormula = "[product_type] ");
 
                                                     this.setState({
-                                                        value: newValue,
+                                                        altFormula: newAltFormula,
                                                     });
                                                 }}
                                             >
@@ -147,14 +130,12 @@ class AltTextForm extends React.Component {
 
                                             <Tag
                                                 onClick={(e) => {
-                                                    let newValue = this.state.value.trim();
+                                                    let newAltFormula = this.state.altFormula.trim();
 
-                                                    newValue
-                                                        ? (newValue += " [product_handle] ")
-                                                        : (newValue = "[product_handle] ");
+                                                    newAltFormula ? (newAltFormula += " [product_handle] ") : (newAltFormula = "[product_handle] ");
 
                                                     this.setState({
-                                                        value: newValue,
+                                                        altFormula: newAltFormula,
                                                     });
                                                 }}
                                             >
@@ -174,8 +155,7 @@ class AltTextForm extends React.Component {
                                 <Card.Section>
                                     <TextContainer>
                                         <p>
-                                            <Tag>[product_handle]</Tag> Very useful, refers to the product handle,
-                                            exemple /products/this-is-the-product-handle
+                                            <Tag>[product_handle]</Tag> Very useful, refers to the product handle, exemple /products/this-is-the-product-handle
                                         </p>
                                         Ex: <TextStyle variation='code'> this-is-the-product-handle </TextStyle>
                                     </TextContainer>
@@ -187,24 +167,24 @@ class AltTextForm extends React.Component {
             );
     }
 
-    handleChange(newValue) {
-        this.setState({ value: newValue });
+    handleChange(newAltFormula) {
+        this.setState({ altFormula: newAltFormula });
     }
 
     handleSubmit(event) {
-        const templateValue = this.state.value.trim();
-        if (templateValue.length > 0) {
+        const altFormula = this.state.altFormula.trim();
+        if (altFormula.length > 0) {
             axios
                 .post("/api/init", {
-                    templateValue,
+                    altFormula,
                 })
                 .then(
                     (result) => {
                         console.log(result.data);
                         if (result.data.error) {
-                            this.setState({ operationStatus: -1, isLoading: false });
+                            this.setState({ lastOperationStatus: opStatus.FAILED, isLoading: false });
                         } else {
-                            this.setState({ operationStatus: 1, isLoading: false, data: result.data.data });
+                            this.setState({ lastOperationStatus: opStatus.SUCCEEDED, isLoading: false, lastStatusData: result.data.data });
                         }
                     },
                     // Note: it's important to handle errors here

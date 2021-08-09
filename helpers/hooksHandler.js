@@ -87,20 +87,6 @@ module.exports = {
 };
 
 /**
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- */
-
 const product = {
     topic: "PRODUCTS_UPDATE",
     domain: "arabycode.myshopify.com",
@@ -367,3 +353,4 @@ const product = {
         },
     },
 };
+**/

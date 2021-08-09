@@ -7,6 +7,7 @@ import shops from "../db/shops";
 import status from "../db/status";
 
 import { randomNumber } from "../helpers/randomNum";
+import { operationStatus as opStatus } from "../helpers/staticVars";
 
 import { GET_IMGS_QUERY } from "../db/queries";
 import AltTextForm from "../components/AltTextForm";
@@ -20,20 +21,24 @@ class Index extends React.Component {
 
         this.state = {
             product: props.product,
-            status: props.status,
+            lastOperationStatus: props.lastOperationStatus,
             shopName: props.shopName,
             isError: props.isError,
-            templateValue: props.templateValue,
+            altFormula: props.altFormula,
             lastStatusData: JSON.parse(props.lastStatusData),
         };
     }
 
     render() {
-        if (!this.state.isError && this.state.status == 0) return <AltTextForm product={this.state.product} templateValue={this.state.templateValue} shopName={this.state.shopName} />;
-        else if (this.state.status == 2) return <Working />;
-        else if (this.state.status == 1) return <Success lastStatusData={this.state.lastStatusData} />;
-        else return <ErrorsHandler />;
-        return <ErrorsHandler />;
+        if (!this.state.isError && (this.state.lastOperationStatus == opStatus.FIRST_TIME || this.state.lastOperationStatus == opStatus.NEW_FIRST_TIME)) {
+            return <AltTextForm product={this.state.product} lastOperationStatus={this.state.lastOperationStatus} altFormula={this.state.altFormula} shopName={this.state.shopName} />;
+        } else if (this.state.lastOperationStatus == opStatus.IN_PROGRESS) {
+            return <Working />;
+        } else if (this.state.lastOperationStatus == opStatus.SUCCEEDED) {
+            return <Success lastStatusData={this.state.lastStatusData} />;
+        } else {
+            return <ErrorsHandler />;
+        }
     }
 }
 
@@ -49,8 +54,8 @@ export async function getServerSideProps(ctx) {
     let shopName; // gets retreived from the db later
     let isError = false;
     let lastStatusData; // holds the last status data, and potentially the past data as well,
-    let templateValue;
-    let operationStatus = 0; // by default status = 0, first time.
+    let altFormula;
+    let operationStatus = opStatus.FIRST_TIME; // by default set it to first run
 
     try {
         if (!shop) throw new Error("Something went wrong");
@@ -60,18 +65,18 @@ export async function getServerSideProps(ctx) {
          */
 
         const findShopData = await global.Shop.findOne({ shopOrigin: shop });
-        console.log(findShopData);
+        // console.log(findShopData);
         // const findShopData = await shops.findShopByName(shop);
         const fsd_email = findShopData.email;
         const fsd_contactEmail = findShopData.contactEmail;
         const accessToken = findShopData.accessToken;
 
         lastStatusData = await status.getLastStatus(shop);
-        operationStatus = lastStatusData?.status ?? 0;
-        templateValue = lastStatusData?.templateValue;
+        operationStatus = lastStatusData?.status ?? opStatus.FIRST_TIME;
+        altFormula = lastStatusData?.altFormula;
 
         /// When status code = 0, means first time (Not nessairyl)
-        if (operationStatus == 0) {
+        if (operationStatus == opStatus.FIRST_TIME) {
             const url = "https://" + shop + "/admin/api/2021-01/graphql.json";
 
             const result = await axios({
@@ -119,7 +124,7 @@ export async function getServerSideProps(ctx) {
                     product = products[index];
                 }
             }
-        } // end of if status == 0
+        }
     } catch (err) {
         console.log(err);
         isError = true;
@@ -130,8 +135,8 @@ export async function getServerSideProps(ctx) {
             product: product ?? {},
             shopName: "",
             lastStatusData: JSON.stringify(lastStatusData) ?? null,
-            templateValue: templateValue ?? null,
-            status: operationStatus ?? 0,
+            altFormula: altFormula ?? null,
+            lastOperationStatus: operationStatus,
             isError,
         },
     };

@@ -30,10 +30,10 @@ module.exports = {
         });
     },
 
-    setStatus: function (shopOrigin, status, templateValue = null, productsProcessed = null, imgsProcessed = null) {
+    setStatus: function (shopOrigin, status, altFormula = null, productsProcessed = null, imgsProcessed = null) {
         return new Promise(function (resolve, reject) {
             const updateStatus = { $push: { tags: ["javascript"] } };
-            Shop.findOneAndUpdate({ shopOrigin }, { $push: { statuses: [{ status, templateValue, imgsProcessed, productsProcessed }] } }, (err, result) => {
+            Shop.findOneAndUpdate({ shopOrigin }, { $push: { statuses: [{ status, altFormula, imgsProcessed, productsProcessed }] } }, (err, result) => {
                 // console.log("Result of update status: ", result);
                 // console.log("ERROR of update status: ", err);
 
@@ -43,9 +43,9 @@ module.exports = {
             });
         });
 
-        // let query = "INSERT INTO status SET shopId = ?, status= ?, templateValue = ?, productsProcessed = ?, imgsProcessed = ? ";
+        // let query = "INSERT INTO status SET shopId = ?, status= ?, altFormula = ?, productsProcessed = ?, imgsProcessed = ? ";
         // return new Promise(function (resolve, reject) {
-        //     db.query(query, [shopId, status, templateValue, productsProcessed, imgsProcessed], function (err, result) {
+        //     db.query(query, [shopId, status, altFormula, productsProcessed, imgsProcessed], function (err, result) {
         //         if (err) return reject(err);
         //         return resolve(result);
         //     });
