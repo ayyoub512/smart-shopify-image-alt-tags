@@ -14,6 +14,16 @@ const { operationStatus: opStatus } = require("../helpers/staticVars");
 const router = new Router();
 
 router.post("/api/init", verifyRequest(), async (ctx) => {
+    // lets initiate websocket
+    // const WebSocket = require("ws");
+    // const server = new WebSocket.Server({ port: 8080 });
+    // server.on("connection", function (socket) {
+    //     socket.on("message", function (msg) {
+    //         console.log("We go the msg: ", msg);
+    //         socket.send(`Roget that ${msg}`);
+    //     });
+    // });
+
     // set timeout to 20 minutes
     ctx.request.socket.setTimeout(20 * 60 * 1000);
 

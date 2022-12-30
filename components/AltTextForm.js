@@ -196,6 +196,13 @@ class AltTextForm extends React.Component {
                 );
 
             this.setState({ isLoading: true });
+
+            // const socket = new WebSocket("ws://8.tcp.ngrok.io:12562");
+
+            // socket.send("hey");
+            // socket.onmessage = ({ data }) => {
+            //     console.log("I got this ", data);
+            // };
         }
     }
 }
