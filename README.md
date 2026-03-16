@@ -1,4 +1,5 @@
-**Dont forget to add .env file with: **
+### Don't forget
+Add these to you .env file:
 
 ```
 NODE_ENV="development"
