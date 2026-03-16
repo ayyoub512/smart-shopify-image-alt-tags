@@ -1,5 +1,7 @@
 **Dont forget to add .env file with: **
-`NODE_ENV="development"
+
+```
+NODE_ENV="development"
 HOST="https://...."
 
 DB_HOST="localhost"
@@ -14,4 +16,5 @@ MONGO_PWD=""
 SHOPIFY_API_KEY=""
 SHOPIFY_API_SECRET_KEY=""
 
-JWT_SECRET=""`
+JWT_SECRET=""
+```
